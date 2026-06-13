@@ -4,6 +4,8 @@ import { BattleScene } from './game/BattleScene';
 import { UiBridge } from './ui/UiBridge';
 import { BuildPanel } from './ui/BuildPanel';
 import { InfoPanel } from './ui/InfoPanel';
+import { HudController } from './ui/HudController';
+import { ControlBar } from './ui/ControlBar';
 import './ui/ui.css';
 
 const bridge = new UiBridge();
@@ -24,4 +26,6 @@ game.events.once('ready', () => {
   const battle = game.scene.getScene('BattleScene') as BattleScene;
   new BuildPanel(bridge);
   new InfoPanel(bridge, battle);
+  new HudController(bridge, () => battle.exposeGameState());
+  new ControlBar(bridge, () => battle.exposeGameState());
 });

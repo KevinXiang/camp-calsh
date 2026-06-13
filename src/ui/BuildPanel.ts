@@ -1,65 +1,81 @@
-import type { UiBridge } from './UiBridge';
 import type { CampKind, Faction } from '../game/types';
+import type { UiBridge } from './UiBridge';
 
-const KINDS: { key: CampKind; label: string }[] = [
-  { key: 'sword', label: '剑兵营 Q' },
-  { key: 'shield', label: '盾兵营 W' },
-  { key: 'archer', label: '弓兵营 E' },
-  { key: 'javelin', label: '投矛营 R' },
+const KINDS: { key: CampKind; label: string; icon: string }[] = [
+  { key: 'sword', label: '剑兵营', icon: '⚔️' },
+  { key: 'shield', label: '盾兵营', icon: '🛡️' },
+  { key: 'archer', label: '弓兵营', icon: '🏹' },
+  { key: 'javelin', label: '投矛营', icon: '🔱' },
 ];
 
+const HOTKEY_MAP: Record<string, CampKind> = { q: 'sword', w: 'shield', e: 'archer', r: 'javelin' };
+
 export class BuildPanel {
-  private buttons = new Map<CampKind, HTMLButtonElement>();
+  private leftButtons = new Map<CampKind, HTMLButtonElement>();
+  private rightButtons = new Map<CampKind, HTMLButtonElement>();
 
   constructor(private bridge: UiBridge) {
-    const root = document.createElement('div');
-    root.id = 'build-panel';
-    root.className = 'ui';
-
-    const factionRow = document.createElement('div');
-    factionRow.className = 'row';
-    factionRow.append(this.factionBtn('红方', 'red'), this.factionBtn('蓝方', 'blue'));
-
-    const campCol = document.createElement('div');
-    campCol.className = 'row';
-    campCol.style.flexDirection = 'column';
-    for (const k of KINDS) {
-      const b = document.createElement('button');
-      b.textContent = k.label;
-      b.onclick = () => bridge.selectCampKind(k.key);
-      campCol.append(b);
-      this.buttons.set(k.key, b);
-    }
-
-    root.append(factionRow, campCol);
-    document.body.append(root);
-
-    bridge.on('placementChanged', () => this.render());
+    this.createPanel('red', 'left', this.leftButtons);
+    this.createPanel('blue', 'right', this.rightButtons);
     this.bindHotkeys();
+    bridge.on('placementChanged', () => this.render());
     this.render();
   }
 
-  private factionBtn(label: string, f: Faction): HTMLButtonElement {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.className = f === 'red' ? 'f-red' : 'f-blue';
-    b.onclick = () => this.bridge.selectFaction(f);
-    return b;
+  private createPanel(faction: Faction, side: 'left' | 'right', store: Map<CampKind, HTMLButtonElement>): void {
+    const root = document.createElement('div');
+    root.id = `build-panel-${side}`;
+    root.className = 'ui';
+
+    const title = document.createElement('div');
+    title.className = 'build-panel-title';
+    title.textContent = faction === 'red' ? '🔴 红方' : '🔵 蓝方';
+    root.append(title);
+
+    for (const k of KINDS) {
+      const b = document.createElement('button');
+      b.className = 'camp-btn';
+      b.innerHTML = `<span class="icon">${k.icon}</span>${k.label}`;
+      b.draggable = true;
+
+      b.addEventListener('dragstart', (e) => {
+        e.dataTransfer!.setData('application/x-camp-faction', faction);
+        e.dataTransfer!.setData('application/x-camp-kind', k.key);
+        e.dataTransfer!.effectAllowed = 'copy';
+      });
+
+      b.addEventListener('dragend', () => {
+        this.bridge.selectCampKind(null);
+      });
+
+      b.onclick = () => {
+        this.bridge.selectFaction(faction);
+        this.bridge.selectCampKind(k.key);
+      };
+
+      root.append(b);
+      store.set(k.key, b);
+    }
+
+    document.body.append(root);
   }
 
   private bindHotkeys(): void {
     window.addEventListener('keydown', (e) => {
-      if (e.key === '1') this.bridge.selectFaction('red');
-      else if (e.key === '2') this.bridge.selectFaction('blue');
-      const map: Record<string, CampKind> = { q: 'sword', w: 'shield', e: 'archer', r: 'javelin' };
-      if (map[e.key]) this.bridge.selectCampKind(map[e.key]);
+      const kind = HOTKEY_MAP[e.key.toLowerCase()];
+      if (!kind) return;
+      const sel = this.bridge.getSelection();
+      this.bridge.selectCampKind(sel.kind === kind ? null : kind);
     });
   }
 
   private render(): void {
     const sel = this.bridge.getSelection();
-    for (const [kind, btn] of this.buttons) {
-      btn.classList.toggle('active', sel.kind === kind);
+    for (const [kind, btn] of this.leftButtons) {
+      btn.classList.toggle('active', sel.faction === 'red' && sel.kind === kind);
+    }
+    for (const [kind, btn] of this.rightButtons) {
+      btn.classList.toggle('active', sel.faction === 'blue' && sel.kind === kind);
     }
   }
 }

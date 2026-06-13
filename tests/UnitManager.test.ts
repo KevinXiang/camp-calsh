@@ -14,7 +14,9 @@ function mkUnit(o: Partial<Unit> = {}): Unit {
 function mkState(camps: Camp[], units: Unit[]): UnitGSView {
   const cm = new Map<string, Camp>(); for (const c of camps) cm.set(c.id, c);
   const um = new Map<string, Unit>(); for (const u of units) um.set(u.id, u);
-  return { camps: cm, units: um };
+  return { camps: cm, units: um, projectiles: [], events: [],
+    stats: { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+             blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } } };
 }
 
 describe('UnitManager', () => {
@@ -41,5 +43,14 @@ describe('UnitManager', () => {
     const s = mkState([mkCamp({ faction: 'red' })], [u]);
     new UnitManager(s).step(1);
     expect(u.state).toBe('idle');
+  });
+  it('寻敌：攻击距离内有敌方小兵时设为目标', () => {
+    const ally = mkUnit({ id: 'a', faction: 'red', x: 0, y: 0, attackRange: 180, targetId: null });
+    const enemy = mkUnit({ id: 'e', faction: 'blue', x: 50, y: 0 });
+    const s: UnitGSView = { camps: new Map(), units: new Map([[ally.id, ally], [enemy.id, enemy]]), projectiles: [], events: [],
+      stats: { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+               blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } } };
+    new UnitManager(s).step(0.1);
+    expect(ally.targetId).toBe('e');
   });
 });

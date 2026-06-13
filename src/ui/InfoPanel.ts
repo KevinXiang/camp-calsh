@@ -13,11 +13,7 @@ export class InfoPanel {
     el.id = 'info-panel';
     el.className = 'ui';
     this.body = document.createElement('div');
-    const del = document.createElement('button');
-    del.textContent = '删除军营';
-    del.className = 'danger';
-    del.onclick = () => bridge.deleteSelected(scene);
-    el.append(this.body, del);
+    el.append(this.body);
     document.body.append(el);
 
     bridge.on('selectionChanged', () => this.render());
@@ -28,9 +24,10 @@ export class InfoPanel {
     const id = this.bridge.getSelectedCampId();
     const camp = id ? this.scene.exposeGameState().getCamp(id) : undefined;
     if (!camp) {
-      this.body.innerHTML = '<div>未选中</div>';
+      this.body.parentElement!.style.display = 'none';
       return;
     }
+    this.body.parentElement!.style.display = '';
     const factionLabel = camp.faction === 'red' ? '红方' : '蓝方';
     this.body.innerHTML =
       '<div><b>' + factionLabel + ' ' + KIND_LABEL[camp.kind] + '</b></div>' +

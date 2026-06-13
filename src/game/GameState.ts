@@ -1,8 +1,22 @@
-import type { Camp, Unit } from './types';
+import type { Camp, Unit, Projectile, SideStats } from './types';
+import type { CombatEvent } from './effects/types';
+
+export interface SimState {
+  running: boolean;
+  speed: 1 | 2 | 4;
+  timeMs: number;
+}
 
 export class GameState {
   readonly camps = new Map<string, Camp>();
   readonly units = new Map<string, Unit>();
+  projectiles: Projectile[] = [];
+  events: CombatEvent[] = [];
+  sim: SimState = { running: false, speed: 1, timeMs: 0 };
+  stats: { red: SideStats; blue: SideStats } = {
+    red:  { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+    blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+  };
 
   addCamp(camp: Camp): void { this.camps.set(camp.id, camp); }
   removeCamp(id: string): void { this.camps.delete(id); }
