@@ -755,20 +755,27 @@ git commit -m "feat(game): Phaser 骨架 + 无限画布（拖拽/缩放）"
 ```ts
 import Phaser from 'phaser';
 import { FACTION_COLORS } from '../config/colors';
-import type { Camp } from './types';
+import type { Camp, CampKind } from './types';
 
-/** 绘制一个军营显示对象（积木块 + 旗帜），返回容器 */
+// 兵种标识：占位图形须区分兵种（spec 7.4），sword/shield 不可都用 'S'
+const KIND_LABEL: Record<CampKind, string> = {
+  sword: 'S', shield: 'Sh', archer: 'A', javelin: 'J',
+};
+
+/** 绘制一个军营显示对象（积木块 + 旗帜 + 落影），返回容器。视觉规范见 spec 7.4 */
 export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Container {
   const color = FACTION_COLORS[camp.faction];
+  // 落影：2.5D 阴影立体感（spec 7.4），置于容器最底层
+  const shadow = scene.add.ellipse(0, 38, 72, 20, 0x000000, 0.25).setOrigin(0.5);
   const body = scene.add.rectangle(0, 0, 60, 60, color).setOrigin(0.5);
   body.setStrokeStyle(2, 0x000000, 0.4);
   const flag = scene.add.triangle(0, -42, -8, 8, 8, 8, -8, -8, color).setOrigin(0.5);
   const pole = scene.add.rectangle(0, -42, 2, 16, 0x5d4037).setOrigin(0.5);
-  const label = scene.add.text(0, 0, camp.kind[0].toUpperCase(), {
-    fontSize: '20px', color: '#ffffff',
+  const label = scene.add.text(0, 0, KIND_LABEL[camp.kind], {
+    fontSize: '18px', color: '#ffffff',
   }).setOrigin(0.5);
 
-  return scene.add.container(camp.x, camp.y, [body, flag, pole, label]);
+  return scene.add.container(camp.x, camp.y, [shadow, body, flag, pole, label]);
 }
 ```
 
@@ -832,7 +839,7 @@ this.gameState.addCamp({
 - [ ] **Step 4: 手动验收**
 
 Run: `npm run dev`
-Expected: 画布中央（世界 0,0）出现红色方块 + 旗帜 + "S" 字样。
+Expected: 画布中央（世界 0,0）出现红色方块 + 旗帜 + "S" 字样 + 方块下方半透明落影。
 
 验收后**删除** Step 3 的临时代码并保存。
 
