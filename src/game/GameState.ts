@@ -1,8 +1,13 @@
-import type { Camp, Unit } from './types';
+import type { Camp, Unit, Projectile, SideStats } from './types';
 
 export class GameState {
   readonly camps = new Map<string, Camp>();
   readonly units = new Map<string, Unit>();
+  projectiles: Projectile[] = [];
+  stats: { red: SideStats; blue: SideStats } = {
+    red:  { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+    blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+  };
 
   addCamp(camp: Camp): void { this.camps.set(camp.id, camp); }
   removeCamp(id: string): void { this.camps.delete(id); }

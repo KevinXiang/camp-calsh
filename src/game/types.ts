@@ -59,3 +59,22 @@ export interface Unit {
   alive: boolean;
   deathTimer: number;
 }
+
+export interface Projectile {
+  id: string;
+  x: number;
+  y: number;
+  targetId: string;
+  speed: number;
+  damage: number;
+  faction: Faction;
+  elapsed: number;
+  maxTime: number;
+}
+
+export interface SideStats {
+  unitsAlive: number;
+  campsAlive: number;
+  kills: number;
+  campsDestroyed: number;
+}
