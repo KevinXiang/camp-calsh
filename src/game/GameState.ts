@@ -1,4 +1,5 @@
 import type { Camp, Unit, Projectile, SideStats } from './types';
+import type { CombatEvent } from './effects/types';
 
 export interface SimState {
   running: boolean;
@@ -10,6 +11,7 @@ export class GameState {
   readonly camps = new Map<string, Camp>();
   readonly units = new Map<string, Unit>();
   projectiles: Projectile[] = [];
+  events: CombatEvent[] = [];
   sim: SimState = { running: false, speed: 1, timeMs: 0 };
   stats: { red: SideStats; blue: SideStats } = {
     red:  { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
