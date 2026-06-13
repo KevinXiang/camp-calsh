@@ -52,11 +52,12 @@ describe('CombatSystem', () => {
     expect(gs.projectiles.length).toBe(0);
   });
 
-  it('死亡 0.3s 后从 Map 移除', () => {
+  it('死亡单位尸体保留不删除，deathTimer 归零停止', () => {
     const u = mkUnit({ alive: false, deathTimer: 0.05 });
     const gs = mkGS({ units: new Map([[u.id, u]]) });
     CombatSystem.step(gs, 0.1);
-    expect(gs.units.has(u.id)).toBe(false);
+    expect(gs.units.has(u.id)).toBe(true);
+    expect(u.deathTimer).toBe(0);
   });
 
   it('小兵死亡时 camp.aliveUnits--', () => {

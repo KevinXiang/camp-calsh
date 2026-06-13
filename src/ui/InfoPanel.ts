@@ -13,11 +13,7 @@ export class InfoPanel {
     el.id = 'info-panel';
     el.className = 'ui';
     this.body = document.createElement('div');
-    const del = document.createElement('button');
-    del.textContent = '删除军营';
-    del.className = 'danger';
-    del.onclick = () => bridge.deleteSelected(scene);
-    el.append(this.body, del);
+    el.append(this.body);
     document.body.append(el);
 
     bridge.on('selectionChanged', () => this.render());

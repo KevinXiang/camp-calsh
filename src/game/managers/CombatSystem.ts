@@ -53,11 +53,10 @@ export class CombatSystem {
     }
     gs.projectiles = survived;
 
-    // 死亡清理
+    // 死亡计时（尸体保留不删除）
     for (const u of gs.units.values()) {
       if (u.alive) continue;
-      u.deathTimer -= dt;
-      if (u.deathTimer <= 0) gs.units.delete(u.id);
+      if (u.deathTimer > 0) u.deathTimer = Math.max(0, u.deathTimer - dt);
     }
   }
 }
