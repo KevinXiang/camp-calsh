@@ -14,9 +14,7 @@ export class ControlBar {
       <button data-action="speed-2">2x</button>
       <button data-action="speed-4">4x</button>
       <span class="control-sep"></span>
-      <button data-action="clear-units" title="清除小兵">清兵</button>
-      <button data-action="clear-all" title="清空战场">清场</button>
-      <button data-action="reset-stats" title="重置统计">重置</button>
+      <button data-action="reset" title="重置战场">重置</button>
     `;
     document.body.append(this.root);
 
@@ -32,9 +30,7 @@ export class ControlBar {
         case 'speed-1': this.bridge.setSpeed(1, gs); break;
         case 'speed-2': this.bridge.setSpeed(2, gs); break;
         case 'speed-4': this.bridge.setSpeed(4, gs); break;
-        case 'clear-units': this.bridge.clearUnits(gs); break;
-        case 'clear-all': this.bridge.clearAll(gs); break;
-        case 'reset-stats': this.bridge.resetStats(gs); break;
+        case 'reset': location.reload(); break;
       }
     });
 

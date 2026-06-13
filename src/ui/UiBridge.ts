@@ -60,22 +60,6 @@ export class UiBridge {
     this.emit('simChanged');
   }
 
-  clearUnits(gs: GameState): void {
-    gs.clearUnits();
-    this.emit('statsChanged');
-  }
-
-  clearAll(gs: GameState): void {
-    gs.clearAll();
-    this.emit('statsChanged');
-  }
-
-  resetStats(gs: GameState): void {
-    gs.stats = { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
-                 blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } };
-    this.emit('statsChanged');
-  }
-
   on(event: EventName, cb: () => void): void {
     this.listeners[event].add(cb);
   }

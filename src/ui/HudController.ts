@@ -10,33 +10,47 @@ export class HudController {
     this.el.className = 'ui';
     document.body.append(this.el);
 
-    bridge.on('simChanged', () => this.render());
     bridge.on('statsChanged', () => this.render());
     this.render();
   }
 
   private render(): void {
     const s = this.gs();
-    const r = s.stats.red;
-    const b = s.stats.blue;
-    const speedLabel = s.sim.running ? `${s.sim.speed}x` : '||';
-    const time = Math.floor(s.sim.timeMs / 1000);
-    const m = Math.floor(time / 60);
-    const sec = time % 60;
+    let redTotal = 0, blueTotal = 0, redAlive = 0, blueAlive = 0;
+    for (const u of s.units.values()) {
+      if (u.faction === 'red') { redTotal++; if (u.alive) redAlive++; }
+      else { blueTotal++; if (u.alive) blueAlive++; }
+    }
+    const total = redTotal + blueTotal;
+    let winner = '';
+    if (total > 0 && redAlive === 0 && blueAlive > 0) winner = '🔵 蓝方胜';
+    else if (total > 0 && blueAlive === 0 && redAlive > 0) winner = '🔴 红方胜';
+    else if (total > 0) winner = '⚔️ 战斗中';
+    const speedLabel = s.sim.running ? `${s.sim.speed}x` : '⏸';
+
     this.el.innerHTML = `
-      <span class="hud-stat hud-red">
-        <span class="hud-faction-dot" style="background:#e53935"></span>
-        <span class="hud-label">兵</span>${r.unitsAlive}
-        <span class="hud-label">营</span>${r.campsAlive}
-        <span class="hud-label">杀</span>${r.kills}
+      <span class="hud-section">
+        <span class="hud-icon">🔴</span>
+        <span class="hud-num">${redTotal}</span>
+        <span class="hud-sublabel">总</span>
+        <span class="hud-num hud-alive">${redAlive}</span>
+        <span class="hud-sublabel">活</span>
       </span>
-      <span class="hud-stat hud-blue">
-        <span class="hud-faction-dot" style="background:#1e88e5"></span>
-        <span class="hud-label">兵</span>${b.unitsAlive}
-        <span class="hud-label">营</span>${b.campsAlive}
-        <span class="hud-label">杀</span>${b.kills}
+      <span class="hud-divider"></span>
+      <span class="hud-section">
+        <span class="hud-icon">🔵</span>
+        <span class="hud-num">${blueTotal}</span>
+        <span class="hud-sublabel">总</span>
+        <span class="hud-num hud-alive">${blueAlive}</span>
+        <span class="hud-sublabel">活</span>
       </span>
-      <span class="hud-time">${m}:${sec.toString().padStart(2, '0')}</span>
+      <span class="hud-divider"></span>
+      <span class="hud-section">
+        <span class="hud-icon">👥</span>
+        <span class="hud-num">${total}</span>
+        <span class="hud-sublabel">总计</span>
+      </span>
+      <span class="hud-winner">${winner}</span>
       <span class="hud-speed">${speedLabel}</span>
     `;
   }

@@ -108,6 +108,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.syncUnitViews();
     this.syncProjectileViews();
+    this.bridge.emit('statsChanged');
   }
 
   private syncCampViews(): void {

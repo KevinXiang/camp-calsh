@@ -25,15 +25,17 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 #info-panel { top: 270px; right: 12px; width: 200px; background: rgba(0,0,0,0.5);
   padding: 10px; border-radius: 8px; color: #fff; font-size: 13px; display: none; }
 
-#hud { top: 0; left: 0; right: 0; height: 28px; display: flex; align-items: center; gap: 10px;
-  background: rgba(0,0,0,0.55); padding: 0 12px; font-size: 14px; color: #ccc; }
-.hud-stat { display: flex; align-items: center; gap: 3px; font-weight: bold; }
-.hud-faction-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
-.hud-red { color: #ef9a9a; }
-.hud-blue { color: #90caf9; }
-.hud-label { font-size: 11px; color: #888; font-weight: normal; }
-.hud-time { margin-left: auto; font-size: 13px; color: #fff; font-variant-numeric: tabular-nums; }
-.hud-speed { font-size: 13px; color: #ffeb3b; min-width: 24px; text-align: center; }
+#hud { top: 0; left: 0; right: 0; height: 42px; display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.6); padding: 0 16px; font-size: 20px; color: #fff;
+  font-family: system-ui, sans-serif; user-select: none; }
+.hud-section { display: flex; align-items: center; gap: 3px; }
+.hud-icon { font-size: 22px; }
+.hud-num { font-weight: bold; font-variant-numeric: tabular-nums; min-width: 28px; text-align: center; }
+.hud-alive { color: #76ff03; }
+.hud-sublabel { font-size: 12px; color: #999; }
+.hud-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 4px; }
+.hud-winner { margin-left: auto; font-size: 20px; font-weight: bold; }
+.hud-speed { font-size: 18px; color: #ffeb3b; min-width: 32px; text-align: center; font-weight: bold; }
 
 #control-bar { bottom: 0; left: 0; right: 0; height: 36px; display: flex; align-items: center;
   gap: 4px; background: rgba(0,0,0,0.55); padding: 0 12px; }
