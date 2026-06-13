@@ -24,9 +24,10 @@ export class InfoPanel {
     const id = this.bridge.getSelectedCampId();
     const camp = id ? this.scene.exposeGameState().getCamp(id) : undefined;
     if (!camp) {
-      this.body.innerHTML = '<div>未选中</div>';
+      this.body.parentElement!.style.display = 'none';
       return;
     }
+    this.body.parentElement!.style.display = '';
     const factionLabel = camp.faction === 'red' ? '红方' : '蓝方';
     this.body.innerHTML =
       '<div><b>' + factionLabel + ' ' + KIND_LABEL[camp.kind] + '</b></div>' +
