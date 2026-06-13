@@ -150,11 +150,24 @@ export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): 
   // 死亡处理：只在第一帧切换为尸体并锁定
   if (!unit.alive) {
     if (view.getData('corpse') !== true) {
-      view.removeAll(true);
-      const g = view.scene.add.graphics();
-      drawCorpse(g);
-      view.add(g);
+      // 第一次进入死亡：先播倒下旋转 → 再切尸体
+      const body = view.getData('body') as Phaser.GameObjects.Container | undefined;
+      if (body) {
+        view.scene.tweens.add({
+          targets: body,
+          rotation: Math.PI / 2,
+          duration: 250,
+          ease: 'Cubic.easeIn',
+        });
+      }
       view.setData('corpse', true);
+      view.scene.time.delayedCall(280, () => {
+        if (!view.scene) return;
+        view.removeAll(true);
+        const g = view.scene.add.graphics();
+        drawCorpse(g);
+        view.add(g);
+      });
     }
     view.setAlpha(Math.max(0.4, unit.deathTimer / 0.3));
     return;
