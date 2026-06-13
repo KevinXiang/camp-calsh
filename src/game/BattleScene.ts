@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
 import { GameState } from './GameState';
 import { drawCamp } from './campRenderer';
+import { drawUnit, updateUnitView } from './unitRenderer';
 import { PlacementController } from './managers/PlacementController';
 import { SelectionInput } from './managers/SelectionInput';
+import { CampManager } from './managers/CampManager';
+import { UnitManager } from './managers/UnitManager';
 import { SELECTION_COLOR } from '../config/colors';
 import type { UiBridge } from '../ui/UiBridge';
 
@@ -14,14 +17,15 @@ export class BattleScene extends Phaser.Scene {
 
   private gameState = new GameState();
   private campViews = new Map<string, Phaser.GameObjects.Container>();
+  private unitViews = new Map<string, Phaser.GameObjects.Container>();
   private placement!: PlacementController;
   private selectionInput!: SelectionInput;
   private selectionRing!: Phaser.GameObjects.Arc;
+  private campManager!: CampManager;
+  private unitManager!: UnitManager;
   private bridge!: UiBridge;
 
-  constructor() {
-    super('BattleScene');
-  }
+  constructor() { super('BattleScene'); }
 
   create(): void {
     const width = this.scale.width;
@@ -38,7 +42,6 @@ export class BattleScene extends Phaser.Scene {
 
     this.setupInput();
     this.scale.on('resize', this.onResize, this);
-
     this.syncCampViews();
 
     this.bridge = this.game.registry.get('bridge') as UiBridge;
@@ -49,15 +52,16 @@ export class BattleScene extends Phaser.Scene {
     this.selectionInput = new SelectionInput(this, this.bridge);
     this.bridge.on('selectionChanged', () => this.updateSelectionRing());
     this.updateSelectionRing();
+
+    this.campManager = new CampManager(this.gameState);
+    this.unitManager = new UnitManager(this.gameState);
   }
 
   private setupInput(): void {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (p.rightButtonDown()) this.isPanning = true;
     });
-    this.input.on('pointerup', () => {
-      this.isPanning = false;
-    });
+    this.input.on('pointerup', () => { this.isPanning = false; });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.isPanning) return;
       const cam = this.cameras.main;
@@ -76,10 +80,16 @@ export class BattleScene extends Phaser.Scene {
     this.ground.setSize(gameSize.width, gameSize.height);
   }
 
-  update(): void {
+  update(_time: number, deltaMs: number): void {
     const cam = this.cameras.main;
     this.ground.tilePositionX = cam.scrollX;
     this.ground.tilePositionY = cam.scrollY;
+
+    const dt = deltaMs / 1000;
+    this.campManager.step(dt);
+    this.unitManager.step(dt);
+
+    this.syncUnitViews();
   }
 
   private syncCampViews(): void {
@@ -87,40 +97,35 @@ export class BattleScene extends Phaser.Scene {
     for (const camp of this.gameState.allCamps()) {
       seen.add(camp.id);
       let view = this.campViews.get(camp.id);
-      if (!view) {
-        view = drawCamp(this, camp);
-        this.campViews.set(camp.id, view);
-      } else {
-        view.setPosition(camp.x, camp.y);
-      }
+      if (!view) { view = drawCamp(this, camp); this.campViews.set(camp.id, view); }
+      else { view.setPosition(camp.x, camp.y); }
     }
     for (const [id, view] of this.campViews) {
-      if (!seen.has(id)) {
-        view.destroy();
-        this.campViews.delete(id);
-      }
+      if (!seen.has(id)) { view.destroy(); this.campViews.delete(id); }
     }
   }
 
-  exposeGameState(): GameState {
-    return this.gameState;
+  private syncUnitViews(): void {
+    const seen = new Set<string>();
+    for (const u of this.gameState.allUnits()) {
+      seen.add(u.id);
+      let view = this.unitViews.get(u.id);
+      if (!view) { view = drawUnit(this, u); this.unitViews.set(u.id, view); }
+      updateUnitView(view, u);
+    }
+    for (const [id, view] of this.unitViews) {
+      if (!seen.has(id)) { view.destroy(); this.unitViews.delete(id); }
+    }
   }
 
-  refreshViews(): void {
-    this.syncCampViews();
-  }
+  exposeGameState(): GameState { return this.gameState; }
+  refreshViews(): void { this.syncCampViews(); }
 
   private updateSelectionRing(): void {
     const id = this.bridge.getSelectedCampId();
-    if (id === null) {
-      this.selectionRing.setVisible(false);
-      return;
-    }
+    if (id === null) { this.selectionRing.setVisible(false); return; }
     const camp = this.gameState.getCamp(id);
-    if (!camp) {
-      this.selectionRing.setVisible(false);
-      return;
-    }
+    if (!camp) { this.selectionRing.setVisible(false); return; }
     this.selectionRing.setPosition(camp.x, camp.y).setVisible(true);
   }
 }
