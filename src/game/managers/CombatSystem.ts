@@ -15,6 +15,7 @@ export class CombatSystem {
     if ('alive' in target) {
       target.alive = false;
       target.state = 'idle';
+      target.deathTimer = 0.3;
       const camp = gs.camps.get(target.campId);
       if (camp) camp.aliveUnits = Math.max(0, camp.aliveUnits - 1);
       const killerFaction = target.faction === 'red' ? 'blue' : 'red';
