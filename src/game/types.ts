@@ -29,3 +29,33 @@ export interface Camp {
   aliveUnits: number;
   destroyed: boolean;
 }
+
+export interface UnitDef {
+  kind: UnitKind;
+  attackType: AttackType;
+  maxHp: number;
+  attack: number;
+  attackRange: number;
+  attackInterval: number;
+  moveSpeed: number;
+}
+
+export interface Unit {
+  id: string;
+  faction: Faction;
+  kind: UnitKind;
+  campId: string;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  attack: number;
+  attackRange: number;
+  attackInterval: number;
+  moveSpeed: number;
+  attackTimer: number;
+  targetId: string | null;
+  state: 'moving' | 'attacking' | 'idle';
+  alive: boolean;
+  deathTimer: number;
+}
