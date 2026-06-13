@@ -4,6 +4,7 @@ import type { Unit, UnitKind, Faction } from './types';
 
 const SKIN = 0xffcc80;
 const BODY_W = 2.5;
+const CORPSE_COLOR = 0x777777;
 
 function drawStickFigure(g: Phaser.GameObjects.Graphics, faction: Faction, kind: UnitKind): void {
   const color = FACTION_COLORS[faction];
@@ -116,6 +117,19 @@ export function drawUnit(scene: Phaser.Scene, unit: Unit): Phaser.GameObjects.Co
 
 export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): void {
   view.setPosition(unit.x, unit.y);
+
+  if (!unit.alive) {
+    if (view.getData('corpse') !== true) {
+      view.removeAll(true);
+      const g = view.scene.add.graphics();
+      drawCorpse(g);
+      view.add(g);
+      view.setData('corpse', true);
+    }
+    view.setAlpha(Math.max(0, unit.deathTimer / 0.3));
+    return;
+  }
+
   // 血条更新（child[1]=bg, child[2]=fill）
   const hpFill = view.getAt(2) as Phaser.GameObjects.Rectangle;
   if (hpFill) {
@@ -124,8 +138,35 @@ export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): 
     const c = ratio > 0.5 ? 0x4caf50 : ratio > 0.25 ? 0xffc107 : 0xf44336;
     hpFill.setFillStyle(c);
   }
-  // 死亡淡出
-  if (!unit.alive) {
-    view.setAlpha(Math.max(0, unit.deathTimer / 0.3));
-  }
+}
+
+function drawCorpse(g: Phaser.GameObjects.Graphics): void {
+  // 落影
+  g.fillStyle(0x000000, 0.1);
+  g.fillEllipse(0, 4, 28, 9);
+
+  // 身体横躺
+  g.lineStyle(BODY_W + 0.5, CORPSE_COLOR, 0.8);
+  g.lineBetween(-12, 0, 10, 0);
+
+  // 腿（瘫软散开）
+  g.lineStyle(BODY_W, CORPSE_COLOR, 0.7);
+  g.lineBetween(-6, 0, -12, 8);
+  g.lineBetween(-6, 0, -2, 9);
+
+  // 头歪向一边
+  g.fillStyle(CORPSE_COLOR, 0.8);
+  g.fillCircle(12, -1, 5.5);
+  g.lineStyle(1, 0x555555, 0.5);
+  g.strokeCircle(12, -1, 5.5);
+
+  // X 眼
+  g.lineStyle(1.2, 0x555555, 0.7);
+  g.lineBetween(10, -3, 14, 1);
+  g.lineBetween(14, -3, 10, 1);
+
+  // 小臂散落
+  g.lineStyle(BODY_W - 0.3, CORPSE_COLOR, 0.6);
+  g.lineBetween(4, 0, 10, 8);
+  g.lineBetween(2, 0, -4, 7);
 }

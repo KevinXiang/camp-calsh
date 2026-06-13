@@ -10,7 +10,6 @@ export class PlacementController {
   private preview: Phaser.GameObjects.Arc;
   private faction: Faction = 'red';
   private kind: CampKind | null = null;
-  private dragStart: Phaser.Math.Vector2 | null = null;
 
   constructor(
     private scene: BattleScene,
@@ -26,6 +25,8 @@ export class PlacementController {
 
     bridge.on('placementChanged', () => this.refreshFromBridge());
     this.refreshFromBridge();
+
+    this.setupDragDrop();
   }
 
   private refreshFromBridge(): void {
@@ -34,9 +35,31 @@ export class PlacementController {
     this.kind = sel.kind;
   }
 
+  private setupDragDrop(): void {
+    const canvas = this.scene.game.canvas;
+    canvas.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'copy';
+    });
+    canvas.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const faction = e.dataTransfer!.getData('application/x-camp-faction') as Faction;
+      const kind = e.dataTransfer!.getData('application/x-camp-kind') as CampKind;
+      if (!faction || !kind) return;
+      const rect = canvas.getBoundingClientRect();
+      const sx = (e.clientX - rect.left) / rect.width * canvas.width;
+      const sy = (e.clientY - rect.top) / rect.height * canvas.height;
+      const wp = this.scene.cameras.main.getWorldPoint(sx, sy);
+      this.placeCamp(wp.x, wp.y, faction, kind);
+    });
+  }
+
   private onDown(p: Phaser.Input.Pointer): void {
     if (!p.leftButtonDown() || this.kind === null) return;
-    this.dragStart = new Phaser.Math.Vector2(p.x, p.y);
+    const wp = this.scene.cameras.main.getWorldPoint(p.x, p.y);
+    const gs = this.scene.exposeGameState();
+    if (!canPlaceCamp(gs.allCamps(), wp.x, wp.y, CAMP_MIN_DISTANCE)) return;
+    this.placeCamp(wp.x, wp.y, this.faction, this.kind);
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
@@ -53,25 +76,21 @@ export class PlacementController {
     this.preview.setVisible(true);
   }
 
-  private onUp(p: Phaser.Input.Pointer): void {
-    const start = this.dragStart;
-    this.dragStart = null;
-    if (!start || this.kind === null) return;
+  private onUp(_p: Phaser.Input.Pointer): void {
+    // Placement happens on pointerdown with click-to-place
+  }
 
-    const moved = Phaser.Math.Distance.Between(start.x, start.y, p.x, p.y);
-    if (moved > 6) return;
-
-    const wp = this.scene.cameras.main.getWorldPoint(p.x, p.y);
+  private placeCamp(x: number, y: number, faction: Faction, kind: CampKind): void {
     const gs = this.scene.exposeGameState();
-    if (!canPlaceCamp(gs.allCamps(), wp.x, wp.y, CAMP_MIN_DISTANCE)) return;
+    if (!canPlaceCamp(gs.allCamps(), x, y, CAMP_MIN_DISTANCE)) return;
 
-    const def = CAMP_DEFS[this.kind];
+    const def = CAMP_DEFS[kind];
     const camp: Camp = {
       id: crypto.randomUUID(),
-      faction: this.faction,
-      kind: this.kind,
-      x: wp.x,
-      y: wp.y,
+      faction,
+      kind,
+      x,
+      y,
       hp: def.maxHp,
       maxHp: def.maxHp,
       spawnTimer: 0,
@@ -82,5 +101,6 @@ export class PlacementController {
     gs.addCamp(camp);
     this.scene.refreshViews();
     this.preview.setVisible(false);
+    this.bridge.selectCampKind(null);
   }
 }

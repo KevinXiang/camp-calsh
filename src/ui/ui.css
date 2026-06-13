@@ -5,19 +5,29 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 .ui { position: absolute; pointer-events: none; font-family: system-ui, sans-serif; }
 .ui > * { pointer-events: auto; }
 
-#build-panel { top: 60px; left: 12px; display: flex; flex-direction: column; gap: 8px;
-  background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; color: #fff; }
-#build-panel .row { display: flex; gap: 6px; }
-#build-panel button { padding: 8px 10px; border: 0; border-radius: 6px; cursor: pointer; font-size: 14px; }
-#build-panel button.active { outline: 3px solid #ffeb3b; }
-.f-red { background: #e53935; color: #fff; }
-.f-blue { background: #1e88e5; color: #fff; }
+#build-panel-left { top: 60px; left: 12px; display: flex; flex-direction: column; gap: 6px;
+  background: rgba(229, 57, 53, 0.45); padding: 8px; border-radius: 8px; color: #fff;
+  border: 2px solid rgba(229, 57, 53, 0.7); }
+#build-panel-right { top: 60px; right: 12px; display: flex; flex-direction: column; gap: 6px;
+  background: rgba(30, 136, 229, 0.45); padding: 8px; border-radius: 8px; color: #fff;
+  border: 2px solid rgba(30, 136, 229, 0.7); }
+.build-panel-title { font-size: 13px; font-weight: bold; text-align: center; }
+#build-panel-left .build-panel-title { color: #ff8a80; }
+#build-panel-right .build-panel-title { color: #82b1ff; }
+.camp-btn { display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+  border: 0; border-radius: 6px; cursor: grab; font-size: 13px; color: #fff;
+  background: rgba(255,255,255,0.12); transition: background 0.15s; }
+.camp-btn:hover { background: rgba(255,255,255,0.25); }
+.camp-btn:active { cursor: grabbing; }
+.camp-btn.active { outline: 3px solid #ffeb3b; background: rgba(255,255,255,0.30); }
+.camp-btn .icon { font-size: 18px; width: 24px; text-align: center; }
 
-#info-panel { top: 60px; right: 12px; width: 200px; background: rgba(0,0,0,0.5);
+#info-panel { top: 270px; right: 12px; width: 200px; background: rgba(0,0,0,0.5);
   padding: 10px; border-radius: 8px; color: #fff; font-size: 13px; }
 #info-panel button { margin-top: 6px; padding: 6px; width: 100%; border: 0; border-radius: 6px; cursor: pointer; }
 #info-panel .danger { background: #e53935; color: #fff; }
 
 @media (pointer: coarse) {
-  #build-panel button, #info-panel button { padding: 12px 14px; font-size: 16px; }
+  .camp-btn { padding: 12px 14px; font-size: 16px; }
+  #info-panel button { padding: 12px 14px; font-size: 16px; }
 }
