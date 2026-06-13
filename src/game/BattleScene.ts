@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameState } from './GameState';
+import { SimulationClock } from './SimulationClock';
 import { drawCamp } from './campRenderer';
 import { drawUnit, updateUnitView } from './unitRenderer';
 import { PlacementController } from './managers/PlacementController';
@@ -18,6 +19,7 @@ export class BattleScene extends Phaser.Scene {
   readonly MAX_ZOOM = 2.5;
 
   private gameState = new GameState();
+  private clock = new SimulationClock();
   private campViews = new Map<string, Phaser.GameObjects.Container>();
   private unitViews = new Map<string, Phaser.GameObjects.Container>();
   private projectileViews = new Map<string, Phaser.GameObjects.Container>();
@@ -44,6 +46,7 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.setZoom(1);
 
     this.setupInput();
+    this.setupKeyboard();
     this.scale.on('resize', this.onResize, this);
     this.syncCampViews();
 
@@ -79,6 +82,12 @@ export class BattleScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
   }
 
+  private setupKeyboard(): void {
+    this.input.keyboard?.on('keydown-SPACE', () => {
+      this.bridge.setRunning(!this.gameState.sim.running, this.gameState);
+    });
+  }
+
   private onResize(gameSize: Phaser.Structs.Size): void {
     this.ground.setSize(gameSize.width, gameSize.height);
   }
@@ -88,10 +97,14 @@ export class BattleScene extends Phaser.Scene {
     this.ground.tilePositionX = cam.scrollX;
     this.ground.tilePositionY = cam.scrollY;
 
-    const dt = deltaMs / 1000;
-    this.campManager.step(dt);
-    this.unitManager.step(dt);
-    CombatSystem.step(this.gameState, dt);
+    const steps = this.clock.consume(deltaMs, this.gameState.sim.running, this.gameState.sim.speed);
+    const dt = this.clock.fixedDt();
+    for (let i = 0; i < steps; i++) {
+      this.campManager.step(dt);
+      this.unitManager.step(dt);
+      CombatSystem.step(this.gameState, dt);
+      this.gameState.sim.timeMs += dt * 1000;
+    }
 
     this.syncUnitViews();
     this.syncProjectileViews();

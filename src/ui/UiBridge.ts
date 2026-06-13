@@ -6,12 +6,14 @@ export interface PlacementSelection {
   kind: CampKind | null;
 }
 
-type EventName = 'placementChanged' | 'selectionChanged';
+type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged';
 
 export class UiBridge {
   private listeners: Record<EventName, Set<() => void>> = {
     placementChanged: new Set(),
     selectionChanged: new Set(),
+    simChanged: new Set(),
+    statsChanged: new Set(),
   };
   private selection: PlacementSelection = { faction: 'red', kind: null };
   private selectedCampId: string | null = null;
@@ -46,6 +48,32 @@ export class UiBridge {
       this.selectedCampId = null;
       this.emit('selectionChanged');
     }
+  }
+
+  setRunning(b: boolean, gs: GameState): void {
+    gs.sim.running = b;
+    this.emit('simChanged');
+  }
+
+  setSpeed(s: 1 | 2 | 4, gs: GameState): void {
+    gs.sim.speed = s;
+    this.emit('simChanged');
+  }
+
+  clearUnits(gs: GameState): void {
+    gs.clearUnits();
+    this.emit('statsChanged');
+  }
+
+  clearAll(gs: GameState): void {
+    gs.clearAll();
+    this.emit('statsChanged');
+  }
+
+  resetStats(gs: GameState): void {
+    gs.stats = { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
+                 blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } };
+    this.emit('statsChanged');
   }
 
   on(event: EventName, cb: () => void): void {
