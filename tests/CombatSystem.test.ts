@@ -13,7 +13,7 @@ function mkUnit(o: Partial<Unit> = {}): Unit {
 }
 function mkGS(overrides: Partial<CombatGSView> = {}): CombatGSView {
   return {
-    units: new Map(), camps: new Map(), projectiles: [],
+    units: new Map(), camps: new Map(), projectiles: [], events: [],
     stats: { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
              blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } },
     ...overrides,
@@ -24,7 +24,7 @@ describe('CombatSystem', () => {
   it('小兵 hp≤0 则 alive=false, kills++', () => {
     const u = mkUnit({ faction: 'red', hp: 10 });
     const gs = mkGS({ units: new Map([[u.id, u]]) });
-    CombatSystem.applyDamage(u, 15, gs);
+    CombatSystem.applyDamage(u, 15, gs, { source: 'melee' });
     expect(u.alive).toBe(false);
     expect(gs.stats.blue.kills).toBe(1);
   });
@@ -32,7 +32,7 @@ describe('CombatSystem', () => {
   it('军营 hp≤0 则 destroyed=true, campsDestroyed++', () => {
     const c = mkCamp({ faction: 'blue', hp: 10 });
     const gs = mkGS({ camps: new Map([[c.id, c]]) });
-    CombatSystem.applyDamage(c, 15, gs);
+    CombatSystem.applyDamage(c, 15, gs, { source: 'melee' });
     expect(c.destroyed).toBe(true);
     expect(gs.stats.red.campsDestroyed).toBe(1);
   });
@@ -64,7 +64,7 @@ describe('CombatSystem', () => {
     const c = mkCamp({ id: 'camp1', aliveUnits: 3 });
     const u = mkUnit({ campId: 'camp1', hp: 10, faction: 'red' });
     const gs = mkGS({ camps: new Map([[c.id, c]]), units: new Map([[u.id, u]]) });
-    CombatSystem.applyDamage(u, 15, gs);
+    CombatSystem.applyDamage(u, 15, gs, { source: 'melee' });
     expect(u.alive).toBe(false);
     expect(c.aliveUnits).toBe(2);
   });

@@ -1,4 +1,5 @@
 import type { Camp, Unit, Projectile, SideStats } from '../types';
+import type { CombatEvent } from '../effects/types';
 import { UNIT_DEFS } from '../../config/units';
 import { SpatialGrid } from '../spatial/SpatialGrid';
 import { CombatSystem } from './CombatSystem';
@@ -7,6 +8,7 @@ export interface UnitGSView {
   camps: Map<string, Camp>;
   units: Map<string, Unit>;
   projectiles: Projectile[];
+  events: CombatEvent[];
   stats: { red: SideStats; blue: SideStats };
 }
 
@@ -79,7 +81,7 @@ export class UnitManager {
             speed: 200, damage: u.attack, faction: u.faction, elapsed: 0, maxTime: 2,
           });
         } else {
-          CombatSystem.applyDamage(target as Unit | Camp, u.attack, this.gs);
+          CombatSystem.applyDamage(target as Unit | Camp, u.attack, this.gs, { source: 'melee' });
         }
       }
     } else {
