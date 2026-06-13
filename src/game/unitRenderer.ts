@@ -207,3 +207,105 @@ function drawCorpse(g: Phaser.GameObjects.Graphics): void {
   g.lineBetween(4, 0, 10, 8);
   g.lineBetween(2, 0, -4, 7);
 }
+
+/**
+ * 检测 attackTimer 从低被重置为高（即刚开火）→ 触发对应动作。
+ * 由 BattleScene 在 sync 时调用。
+ */
+export function maybeTriggerAttackAnim(
+  view: Phaser.GameObjects.Container,
+  unit: Unit
+): void {
+  const anim = view.getData('anim') as AnimState | undefined;
+  const body = view.getData('body') as Phaser.GameObjects.Container | undefined;
+  if (!anim || !body || !unit.alive) return;
+
+  // attackTimer 刚从 ≤0.05 跳回到 ≥interval*0.9 → 视为开火
+  const justFired = anim.prevAttackTimer <= 0.05 && unit.attackTimer >= unit.attackInterval * 0.9;
+  anim.prevAttackTimer = unit.attackTimer;
+  if (!justFired) return;
+
+  switch (anim.kind) {
+    case 'sword':   playSlashAnim(body); break;
+    case 'shield':  playBashAnim(body); break;
+    case 'archer':  playBowAnim(body); break;
+    case 'javelin': playJavelinAnim(body); break;
+  }
+}
+
+/** 剑兵挥砍：body 旋转挥砍（yoyo 回到 0，不与 walk 冲突） */
+function playSlashAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({
+    targets: body,
+    rotation: { from: 0, to: 0.5 },
+    y: 0,           // 顺手把竖直位置归零（可能停在 walk 半程）
+    duration: 120,
+    yoyo: true,
+    ease: 'Cubic.easeOut',
+  });
+}
+
+/** 盾兵猛击：body 前推 + 回弹 */
+function playBashAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({
+    targets: body,
+    x: { from: 0, to: 4 },
+    y: 0,
+    duration: 180,
+    yoyo: true,
+    ease: 'Sine.easeInOut',
+  });
+}
+
+/** 弓兵射箭：body 短促后缩（模拟拉弦回收） */
+function playBowAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({
+    targets: body,
+    x: { from: 0, to: -3 },
+    y: 0,
+    duration: 100,
+    yoyo: true,
+    ease: 'Quad.easeOut',
+  });
+}
+
+/** 投矛：body 上扬旋转 */
+function playJavelinAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({
+    targets: body,
+    rotation: { from: 0, to: 0.2 },
+    y: { from: 0, to: -2 },
+    duration: 200,
+    yoyo: true,
+    ease: 'Cubic.easeOut',
+  });
+}
+
+/**
+ * 受击闪白：覆盖一层白色 graphics 0.15s 淡出 + body 抖动。
+ */
+export function triggerHitFlash(view: Phaser.GameObjects.Container): void {
+  const body = view.getData('body') as Phaser.GameObjects.Container | undefined;
+  if (!body) return;
+
+  const flash = body.scene.add.graphics();
+  flash.fillStyle(0xffffff, 0.7);
+  flash.fillCircle(0, -10, 14);  // 覆盖头+身体范围
+  body.add(flash);
+
+  body.scene.tweens.add({
+    targets: flash,
+    alpha: { from: 0.7, to: 0 },
+    duration: 150,
+    onComplete: () => flash.destroy(),
+  });
+
+  body.scene.tweens.add({
+    targets: body,
+    x: { from: -2, to: 2 },
+    duration: 60,
+    yoyo: true,
+    repeat: 1,
+    ease: 'Sine.easeInOut',
+  });
+}

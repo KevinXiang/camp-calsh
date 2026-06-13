@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { GameState } from './GameState';
 import { SimulationClock } from './SimulationClock';
 import { drawCamp } from './campRenderer';
-import { drawUnit, updateUnitView } from './unitRenderer';
+import { drawUnit, updateUnitView, maybeTriggerAttackAnim, triggerHitFlash } from './unitRenderer';
+import { EffectManager } from './effects/EffectManager';
 import { PlacementController } from './managers/PlacementController';
 import { SelectionInput } from './managers/SelectionInput';
 import { CampManager } from './managers/CampManager';
@@ -28,6 +29,7 @@ export class BattleScene extends Phaser.Scene {
   private selectionRing!: Phaser.GameObjects.Arc;
   private campManager!: CampManager;
   private unitManager!: UnitManager;
+  private effects!: EffectManager;
   private bridge!: UiBridge;
 
   constructor() { super('BattleScene'); }
@@ -61,6 +63,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.campManager = new CampManager(this.gameState);
     this.unitManager = new UnitManager(this.gameState);
+    this.effects = new EffectManager(this);
   }
 
   private setupInput(): void {
@@ -106,6 +109,23 @@ export class BattleScene extends Phaser.Scene {
       this.gameState.sim.timeMs += dt * 1000;
     }
 
+    // 排干事件队列 → 派发到特效层 + 受击闪白
+    if (this.gameState.events.length > 0) {
+      for (const ev of this.gameState.events) {
+        if (ev.kind === 'meleeHit') {
+          for (const u of this.gameState.allUnits()) {
+            if (u.alive && Math.abs(u.x - ev.x) < 1 && Math.abs(u.y - ev.y) < 1) {
+              const v = this.unitViews.get(u.id);
+              if (v) triggerHitFlash(v);
+              break;
+            }
+          }
+        }
+      }
+      this.effects.dispatch(this.gameState.events);
+      this.gameState.events.length = 0;
+    }
+
     this.syncUnitViews();
     this.syncProjectileViews();
     this.bridge.emit('statsChanged');
@@ -131,6 +151,7 @@ export class BattleScene extends Phaser.Scene {
       let view = this.unitViews.get(u.id);
       if (!view) { view = drawUnit(this, u); this.unitViews.set(u.id, view); }
       updateUnitView(view, u);
+      maybeTriggerAttackAnim(view, u);
     }
     for (const [id, view] of this.unitViews) {
       if (!seen.has(id)) { view.destroy(); this.unitViews.delete(id); }
