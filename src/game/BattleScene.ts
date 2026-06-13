@@ -6,6 +6,8 @@ import { PlacementController } from './managers/PlacementController';
 import { SelectionInput } from './managers/SelectionInput';
 import { CampManager } from './managers/CampManager';
 import { UnitManager } from './managers/UnitManager';
+import { CombatSystem } from './managers/CombatSystem';
+import { drawProjectile, updateProjectileView } from './projectileRenderer';
 import { SELECTION_COLOR } from '../config/colors';
 import type { UiBridge } from '../ui/UiBridge';
 
@@ -18,6 +20,7 @@ export class BattleScene extends Phaser.Scene {
   private gameState = new GameState();
   private campViews = new Map<string, Phaser.GameObjects.Container>();
   private unitViews = new Map<string, Phaser.GameObjects.Container>();
+  private projectileViews = new Map<string, Phaser.GameObjects.Container>();
   private placement!: PlacementController;
   private selectionInput!: SelectionInput;
   private selectionRing!: Phaser.GameObjects.Arc;
@@ -88,8 +91,10 @@ export class BattleScene extends Phaser.Scene {
     const dt = deltaMs / 1000;
     this.campManager.step(dt);
     this.unitManager.step(dt);
+    CombatSystem.step(this.gameState, dt);
 
     this.syncUnitViews();
+    this.syncProjectileViews();
   }
 
   private syncCampViews(): void {
@@ -115,6 +120,19 @@ export class BattleScene extends Phaser.Scene {
     }
     for (const [id, view] of this.unitViews) {
       if (!seen.has(id)) { view.destroy(); this.unitViews.delete(id); }
+    }
+  }
+
+  private syncProjectileViews(): void {
+    const seen = new Set<string>();
+    for (const p of this.gameState.projectiles) {
+      seen.add(p.id);
+      let view = this.projectileViews.get(p.id);
+      if (!view) { view = drawProjectile(this, p); this.projectileViews.set(p.id, view); }
+      updateProjectileView(view, p);
+    }
+    for (const [id, view] of this.projectileViews) {
+      if (!seen.has(id)) { view.destroy(); this.projectileViews.delete(id); }
     }
   }
 
