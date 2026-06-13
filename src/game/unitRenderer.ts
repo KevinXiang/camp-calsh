@@ -126,6 +126,6 @@ export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): 
   }
   // 死亡淡出
   if (!unit.alive) {
-    view.setAlpha(Math.max(0.15, unit.deathTimer / 0.3));
+    view.setAlpha(Math.max(0, unit.deathTimer / 0.3));
   }
 }
