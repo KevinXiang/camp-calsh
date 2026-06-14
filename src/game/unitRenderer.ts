@@ -109,6 +109,17 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       g.fillCircle(16, -20, 3);
       break;
     }
+    case 'bomb': {
+      g.lineStyle(BODY_W - 0.3, color, 1);
+      g.lineBetween(0, -5, 8, -8);
+      g.fillStyle(0xc62828, 1);
+      g.fillRect(8, -12, 8, 7);
+      g.lineStyle(0.8, 0xffffff, 0.9);
+      g.lineBetween(8, -10, 16, -10);
+      g.fillStyle(0xff7043, 1);
+      g.fillCircle(12, -13, 1);
+      break;
+    }
   }
 }
 
@@ -243,6 +254,7 @@ export function maybeTriggerAttackAnim(
     case 'shield':  playBashAnim(body); break;
     case 'archer':  playBowAnim(body); break;
     case 'javelin': playJavelinAnim(body); break;
+    case 'bomb':    playBombThrowAnim(body); break;
   }
 }
 
@@ -328,6 +340,13 @@ function playJavelinAnim(body: Phaser.GameObjects.Container): void {
     ease: 'Sine.easeOut',
     delay: 450,
   });
+}
+
+/** 炸弹投掷：举高蓄力 0.25s → 投出 0.18s → 归零 0.2s */
+function playBombThrowAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({ targets: body, rotation: 0.3, y: -3, duration: 250, ease: 'Cubic.easeOut' });
+  body.scene.tweens.add({ targets: body, rotation: -0.2, y: 0, duration: 180, ease: 'Cubic.easeIn', delay: 250 });
+  body.scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 430 });
 }
 
 /**

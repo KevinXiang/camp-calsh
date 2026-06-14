@@ -12,13 +12,20 @@ const JAVELIN_MAX_H = 40;
  */
 const JAVELIN_EXPECTED_DIST = 150;
 
+/** 炸弹抛物线峰值高度（世界坐标 px） */
+const BOMB_MAX_H = 35;
+/** 炸弹预期飞行距离，与 config/units.ts 中 bomb.attackRange=120 同步 */
+const BOMB_EXPECTED_DIST = 120;
+
 export function drawProjectile(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
   if (p.kind === 'javelin') return drawJavelin(scene, p);
+  if (p.kind === 'bomb')    return drawBomb(scene, p);
   return drawArrow(scene, p);
 }
 
 export function updateProjectileView(view: Phaser.GameObjects.Container, p: Projectile): void {
   if (p.kind === 'javelin') return updateJavelin(view, p);
+  if (p.kind === 'bomb')    return updateBomb(view, p);
   return updateArrow(view, p);
 }
 
@@ -107,6 +114,52 @@ function updateJavelin(view: Phaser.GameObjects.Container, p: Projectile): void 
   shaft.setRotation((t - 0.5) * Math.PI * 0.5);
 
   // 影子：始终贴地（y=0 在 container 局部坐标）；按高度缩放和淡化
+  shadow.setPosition(0, 0);
+  shadow.setScale(1 - 0.6 * heightRatio);
+  shadow.setAlpha(0.4 - 0.25 * heightRatio);
+}
+
+/* ───── 炸弹：抛物线 + 影子（复用 javelin 算法，sprite 换 TNT 木箱） ───── */
+
+function drawBomb(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
+  const shadow = scene.add.ellipse(0, 0, 12, 4, 0x000000, 0.4);
+
+  const shaft = scene.add.graphics();
+  shaft.fillStyle(0xc62828, 1);
+  shaft.fillRect(-6, -5, 12, 10);
+  shaft.lineStyle(0.8, 0xffffff, 0.9);
+  shaft.lineBetween(-5, -2, 5, -2);
+  shaft.fillStyle(0xff7043, 1);
+  shaft.fillCircle(0, -7, 1.3);
+
+  const root = scene.add.container(p.x, p.y, [shadow, shaft]);
+  root.setData('startX', p.x);
+  root.setData('startY', p.y);
+  root.setData('shadow', shadow);
+  root.setData('shaft', shaft);
+  return root;
+}
+
+function updateBomb(view: Phaser.GameObjects.Container, p: Projectile): void {
+  const shadow = view.getData('shadow') as Phaser.GameObjects.Ellipse | undefined;
+  const shaft = view.getData('shaft') as Phaser.GameObjects.Graphics | undefined;
+  const startX = view.getData('startX');
+  const startY = view.getData('startY');
+  if (!shadow || !shaft || !Number.isFinite(startX) || !Number.isFinite(startY)) {
+    view.setPosition(p.x, p.y);
+    return;
+  }
+
+  view.setPosition(p.x, p.y);
+
+  const traveled = Math.hypot(p.x - (startX as number), p.y - (startY as number));
+  const t = Math.min(1, traveled / BOMB_EXPECTED_DIST);
+  const visualHeight = 4 * BOMB_MAX_H * t * (1 - t);
+  const heightRatio = visualHeight / BOMB_MAX_H;
+
+  shaft.setPosition(0, -visualHeight);
+  shaft.setRotation((t - 0.5) * Math.PI * 0.3);
+
   shadow.setPosition(0, 0);
   shadow.setScale(1 - 0.6 * heightRatio);
   shadow.setAlpha(0.4 - 0.25 * heightRatio);
