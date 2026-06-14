@@ -5,6 +5,7 @@ export const CAMP_DEFS: Record<CampKind, CampDef> = {
   shield:  { kind: 'shield',  produces: 'shield',  maxHp: 600, spawnInterval: 5, unitCap: 20 },
   archer:  { kind: 'archer',  produces: 'archer',  maxHp: 450, spawnInterval: 5, unitCap: 20 },
   javelin: { kind: 'javelin', produces: 'javelin', maxHp: 450, spawnInterval: 6, unitCap: 20 },
+  bomb:    { kind: 'bomb',    produces: 'bomb',    maxHp: 400, spawnInterval: 7, unitCap: 12 },
 };
 
 /** 军营之间最小放置间距（世界坐标 px） */
