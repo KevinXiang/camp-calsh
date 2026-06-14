@@ -3,7 +3,7 @@ import { FACTION_COLORS } from '../config/colors';
 import type { Camp, CampKind } from './types';
 
 const KIND_ACCENT: Record<CampKind, number> = {
-  sword: 0xffd54f, shield: 0x90a4ae, archer: 0x66bb6a, javelin: 0xff8a65, bomb: 0xc62828,
+  sword: 0xffd54f, shield: 0x90a4ae, archer: 0x66bb6a, javelin: 0xff8a65, bomb: 0xc62828, medic: 0xffffff,
 };
 
 export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Container {
@@ -17,6 +17,7 @@ export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Co
     case 'archer':  drawArcherCamp(g, color, accent);  break;
     case 'javelin': drawJavelinCamp(g, color, accent); break;
     case 'bomb':    drawBombCamp(g, color, accent);     break;
+    case 'medic':   drawMedicCamp(g, color, accent);    break;
   }
 
   // 血条（头顶，与单位血条同风格）
@@ -235,4 +236,23 @@ function drawBombCamp(g: Phaser.GameObjects.Graphics, color: number, _accent: nu
   g.fillCircle(0, -10, 2.5);
   g.fillStyle(0xffeb3b, 0.8);
   g.fillCircle(0, -11, 1.2);
+}
+
+/**
+ * 医疗营：白色主体 + 顶部红十字
+ */
+function drawMedicCamp(g: Phaser.GameObjects.Graphics, _color: number, _accent: number): void {
+  g.fillStyle(0x000000, 0.2);
+  g.fillEllipse(0, 8, 60, 18);
+  g.fillStyle(0xf5f5f5, 1);
+  g.fillRoundedRect(-24, -12, 48, 36, 4);
+  g.lineStyle(2, 0x000000, 0.25);
+  g.strokeRoundedRect(-24, -12, 48, 36, 4);
+  g.fillStyle(0x000000, 0.35);
+  g.fillRoundedRect(-8, 2, 16, 22, 3);
+  g.lineStyle(2, 0x4caf50, 0.6);
+  g.strokeRoundedRect(-8, 2, 16, 22, 3);
+  g.lineStyle(3, 0xe53935, 1);
+  g.lineBetween(0, -26, 0, -8);
+  g.lineBetween(-8, -17, 8, -17);
 }

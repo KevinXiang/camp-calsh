@@ -35,6 +35,7 @@ export class EffectManager {
         case 'meleeHit':      this.spawnMeleeStars(ev.x, ev.y); break;
         case 'javelinHit':    this.spawnJavelinHit(ev.x, ev.y); break;
         case 'shieldBlock':   this.spawnShieldSpark(ev.x, ev.y); break;
+        case 'healHit':       this.spawnHealHit(ev.x, ev.y); break;
         case 'bombHit':       break;   // 仅触发受击闪白，无独立特效
         case 'bombExplosion': this.spawnBombExplosion(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
@@ -301,5 +302,18 @@ export class EffectManager {
       root.destroy();
       this.budget.release();
     });
+  }
+
+  /** 治疗命中：绿色十字缩放 + 小绿星上浮（0.55s 生命） */
+  private spawnHealHit(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+    const cross = this.scene.add.text(0, 0, '+', { fontSize: '20px', color: '#4caf50', fontStyle: 'bold' }).setOrigin(0.5).setScale(0.5);
+    root.add(cross);
+    this.scene.tweens.add({ targets: cross, scale: { from: 0.5, to: 1.2 }, alpha: { from: 1, to: 0 }, duration: 500, ease: 'Cubic.easeOut' });
+    const star = this.scene.add.text(0, -5, '+', { fontSize: '10px', color: '#81c784' }).setOrigin(0.5);
+    root.add(star);
+    this.scene.tweens.add({ targets: star, y: -20, alpha: { from: 1, to: 0 }, duration: 500, ease: 'Cubic.easeOut' });
+    this.scene.time.delayedCall(550, () => { root.destroy(); this.budget.release(); });
   }
 }

@@ -20,12 +20,14 @@ const BOMB_EXPECTED_DIST = 120;
 export function drawProjectile(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
   if (p.kind === 'javelin') return drawJavelin(scene, p);
   if (p.kind === 'bomb')    return drawBomb(scene, p);
+  if (p.kind === 'heal')    return drawHeal(scene, p);
   return drawArrow(scene, p);
 }
 
 export function updateProjectileView(view: Phaser.GameObjects.Container, p: Projectile): void {
   if (p.kind === 'javelin') return updateJavelin(view, p);
   if (p.kind === 'bomb')    return updateBomb(view, p);
+  if (p.kind === 'heal')    return updateHeal(view, p);
   return updateArrow(view, p);
 }
 
@@ -163,4 +165,20 @@ function updateBomb(view: Phaser.GameObjects.Container, p: Projectile): void {
   shadow.setPosition(0, 0);
   shadow.setScale(1 - 0.6 * heightRatio);
   shadow.setAlpha(0.4 - 0.25 * heightRatio);
+}
+
+/* ───── 治疗弹：绿色圆球 + 白色十字 ───── */
+
+function drawHeal(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
+  const g = scene.add.graphics();
+  g.fillStyle(0x4caf50, 0.9);
+  g.fillCircle(0, 0, 5);
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(-2, -5, 4, 10);
+  g.fillRect(-5, -2, 10, 4);
+  return scene.add.container(p.x, p.y, [g]);
+}
+
+function updateHeal(view: Phaser.GameObjects.Container, p: Projectile): void {
+  view.setPosition(p.x, p.y);
 }

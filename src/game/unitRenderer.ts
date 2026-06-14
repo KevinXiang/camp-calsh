@@ -120,6 +120,23 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       g.fillCircle(12, -13, 1);
       break;
     }
+    case 'medic': {
+      g.fillStyle(0xffffff, 0.95);
+      g.fillRect(-6, -8, 12, 16);
+      g.lineStyle(0.5, 0xcccccc, 1);
+      g.strokeRect(-6, -8, 12, 16);
+      g.lineStyle(2.5, 0xe53935, 1);
+      g.lineBetween(0, -12, 0, 4);
+      g.lineBetween(-6, -4, 6, -4);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(8, -6, 7, 5);
+      g.lineStyle(0.5, 0x4caf50, 0.7);
+      g.strokeRect(8, -6, 7, 5);
+      g.lineStyle(1.5, 0xe53935, 0.8);
+      g.lineBetween(10, -5, 13, -2);
+      g.lineBetween(11.5, -4, 11.5, -2);
+      break;
+    }
   }
 }
 
@@ -255,6 +272,7 @@ export function maybeTriggerAttackAnim(
     case 'archer':  playBowAnim(body); break;
     case 'javelin': playJavelinAnim(body); break;
     case 'bomb':    playBombThrowAnim(body); break;
+    case 'medic':   playMedicAnim(body);      break;
   }
 }
 
@@ -347,6 +365,13 @@ function playBombThrowAnim(body: Phaser.GameObjects.Container): void {
   body.scene.tweens.add({ targets: body, rotation: 0.3, y: -3, duration: 250, ease: 'Cubic.easeOut' });
   body.scene.tweens.add({ targets: body, rotation: -0.2, y: 0, duration: 180, ease: 'Cubic.easeIn', delay: 250 });
   body.scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 430 });
+}
+
+/** 医疗投掷：举高 0.25s → 投出 0.15s → 归零 0.2s */
+function playMedicAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({ targets: body, rotation: 0.2, y: -2, duration: 250, ease: 'Cubic.easeOut' });
+  body.scene.tweens.add({ targets: body, rotation: -0.15, y: 0, duration: 150, ease: 'Cubic.easeIn', delay: 250 });
+  body.scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 400 });
 }
 
 /**
