@@ -138,6 +138,7 @@ export class BattleScene extends Phaser.Scene {
       if (winner) this.bridge.declareGameOver(winner, this.gameState);
     }
 
+    this.syncCampViews();
     this.syncUnitViews();
     this.syncProjectileViews();
     this.bridge.emit('statsChanged');
