@@ -19,7 +19,29 @@ export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Co
     case 'bomb':    drawBombCamp(g, color, accent);     break;
   }
 
-  return scene.add.container(camp.x, camp.y, [g]);
+  // 血条（头顶，与单位血条同风格）
+  const hpBg = scene.add.rectangle(0, -62, 50, 4.5, 0x000000, 0.55).setOrigin(0.5);
+  const ratio = Math.max(0, camp.hp / camp.maxHp);
+  const hpC = ratio > 0.5 ? 0x4caf50 : ratio > 0.25 ? 0xffc107 : 0xf44336;
+  const hpFill = scene.add.rectangle(-25, -62, 50 * ratio, 3.5, hpC).setOrigin(0, 0.5);
+
+  const root = scene.add.container(camp.x, camp.y, [g, hpBg, hpFill]);
+  root.setData('hpFill', hpFill);
+  root.setData('ruined', false);
+  return root;
+}
+
+/**
+ * 兵营摧毁蒙层：半透明灰覆盖 + 3 道黑色裂纹。
+ * 直接画在营地 graphics 上（child[0]），不影响血条子对象。
+ */
+export function drawRuinedOverlay(g: Phaser.GameObjects.Graphics): void {
+  g.fillStyle(0x555555, 0.55);
+  g.fillRect(-42, -70, 84, 120);
+  g.lineStyle(2.5, 0x111111, 0.8);
+  g.lineBetween(-20, -5, -10, 15);
+  g.lineBetween(5, -20, 18, 8);
+  g.lineBetween(-12, 8, 8, -10);
 }
 
 /** 剑营：宽方堡（76x44） + 4 城垛 + 顶部交叉双剑 */

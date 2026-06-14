@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GameState } from './GameState';
 import { SimulationClock } from './SimulationClock';
-import { drawCamp } from './campRenderer';
+import { drawCamp, drawRuinedOverlay } from './campRenderer';
 import { drawUnit, updateUnitView, maybeTriggerAttackAnim, triggerHitFlash } from './unitRenderer';
 import { EffectManager } from './effects/EffectManager';
 import { PlacementController } from './managers/PlacementController';
@@ -149,7 +149,24 @@ export class BattleScene extends Phaser.Scene {
       seen.add(camp.id);
       let view = this.campViews.get(camp.id);
       if (!view) { view = drawCamp(this, camp); this.campViews.set(camp.id, view); }
-      else { view.setPosition(camp.x, camp.y); }
+      view.setPosition(camp.x, camp.y);
+
+      // 更新血条
+      const hpFill = view.getData('hpFill') as Phaser.GameObjects.Rectangle;
+      if (hpFill) {
+        const ratio = Math.max(0, camp.hp / camp.maxHp);
+        hpFill.setSize(50 * ratio, 3.5);
+        const c = ratio > 0.5 ? 0x4caf50 : ratio > 0.25 ? 0xffc107 : 0xf44336;
+        hpFill.setFillStyle(c);
+      }
+
+      // 摧毁状态切换（仅第一次触发）
+      if (camp.destroyed && view.getData('ruined') !== true) {
+        const g = view.getAt(0) as Phaser.GameObjects.Graphics;
+        drawRuinedOverlay(g);
+        view.setAlpha(0.75);
+        view.setData('ruined', true);
+      }
     }
     for (const [id, view] of this.campViews) {
       if (!seen.has(id)) { view.destroy(); this.campViews.delete(id); }
