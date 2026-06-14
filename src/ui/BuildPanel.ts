@@ -11,8 +11,8 @@ const KINDS: { key: CampKind; label: string; icon: string }[] = [
 
 const HOTKEY_MAP: Record<string, CampKind> = { q: 'sword', w: 'shield', e: 'archer', r: 'javelin' };
 
-// slider 离散档位（线性 0..N → 0.25x .. 5x），便于显示与拖动手感
-const SPAWN_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5];
+// slider 离散档位（线性 0..N → 0.25x .. 10x），便于显示与拖动手感
+const SPAWN_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
 const DEFAULT_STEP_INDEX = SPAWN_STEPS.indexOf(1);
 
 interface SpawnSliderRefs {
