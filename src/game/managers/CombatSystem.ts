@@ -11,6 +11,8 @@ export interface CombatGSView {
 
 export interface DamageOpts {
   source: 'melee' | 'ranged';
+  /** 仅 source==='ranged' 时有意义；用于命中特效分发。 */
+  weaponKind?: 'arrow' | 'javelin';
 }
 
 export class CombatSystem {
@@ -18,8 +20,12 @@ export class CombatSystem {
     target.hp -= dmg;
 
     if ('alive' in target) {
-      // 单位被打：发命中事件（无论是否致死）
-      gs.events.push({ kind: 'meleeHit', x: target.x, y: target.y, faction: target.faction });
+      // 单位被打：发命中事件（无论是否致死）。weaponKind=javelin 走独立 javelinHit。
+      const isJavelin = opts.source === 'ranged' && opts.weaponKind === 'javelin';
+      gs.events.push(isJavelin
+        ? { kind: 'javelinHit', x: target.x, y: target.y, faction: target.faction }
+        : { kind: 'meleeHit',   x: target.x, y: target.y, faction: target.faction }
+      );
       if (target.hp <= 0) {
         target.alive = false;
         target.state = 'idle';
@@ -58,7 +64,10 @@ export class CombatSystem {
       const dist = Math.hypot(dx, dy);
 
       if (dist < 12) {
-        CombatSystem.applyDamage(target as Unit | Camp, p.damage, gs, { source: 'ranged' });
+        CombatSystem.applyDamage(target as Unit | Camp, p.damage, gs, {
+          source: 'ranged',
+          weaponKind: p.kind,
+        });
         continue;
       }
 

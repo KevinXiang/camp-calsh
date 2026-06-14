@@ -73,7 +73,8 @@ export class UnitManager {
         if (UNIT_DEFS[u.kind]?.attackType === 'ranged') {
           const dx = tx - u.x; const dy = ty - u.y; const d = Math.hypot(dx, dy) || 1;
           this.gs.projectiles.push({
-            id: crypto.randomUUID(), x: u.x, y: u.y, targetId: u.targetId!,
+            id: crypto.randomUUID(), kind: u.kind === 'javelin' ? 'javelin' : 'arrow',
+            x: u.x, y: u.y, targetId: u.targetId!,
             speed: 200, damage: u.attack, faction: u.faction, elapsed: 0, maxTime: 2,
           });
         } else {

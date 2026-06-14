@@ -39,14 +39,14 @@ describe('CombatSystem', () => {
 
   it('弹道命中目标扣血', () => {
     const u = mkUnit({ id: 'target', faction: 'red', hp: 100, x: 200, y: 0 });
-    const p: Projectile = { id: 'p1', x: 195, y: 0, targetId: 'target', speed: 200, damage: 20, faction: 'blue', elapsed: 0, maxTime: 2 };
+    const p: Projectile = { id: 'p1', kind: 'arrow', x: 195, y: 0, targetId: 'target', speed: 200, damage: 20, faction: 'blue', elapsed: 0, maxTime: 2 };
     const gs = mkGS({ units: new Map([[u.id, u]]), projectiles: [p] });
     CombatSystem.step(gs, 1);
     expect(u.hp).toBe(80);
   });
 
   it('弹道超时落空', () => {
-    const p: Projectile = { id: 'p1', x: 0, y: 0, targetId: 'nobody', speed: 200, damage: 20, faction: 'blue', elapsed: 1.9, maxTime: 2 };
+    const p: Projectile = { id: 'p1', kind: 'arrow', x: 0, y: 0, targetId: 'nobody', speed: 200, damage: 20, faction: 'blue', elapsed: 1.9, maxTime: 2 };
     const gs = mkGS({ projectiles: [p] });
     CombatSystem.step(gs, 0.2);
     expect(gs.projectiles.length).toBe(0);

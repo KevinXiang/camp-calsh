@@ -60,8 +60,11 @@ export interface Unit {
   deathTimer: number;
 }
 
+export type ProjectileKind = 'arrow' | 'javelin';
+
 export interface Projectile {
   id: string;
+  kind: ProjectileKind;
   x: number;
   y: number;
   targetId: string;

@@ -67,4 +67,24 @@ describe('CombatSystem events', () => {
     expect(gs.events.some(ev => ev.kind === 'campDestroyed')).toBe(true);
     expect(gs.events.some(ev => ev.kind === 'campHit')).toBe(false);
   });
+
+  it('远程命中且 weaponKind=javelin 时发射 javelinHit 事件而非 meleeHit', () => {
+    const u = mkUnit({ x: 11, y: 22 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyDamage(u, 10, gs, { source: 'ranged', weaponKind: 'javelin' });
+    const e = gs.events.find(ev => ev.kind === 'javelinHit') as Extract<CombatEvent, { kind: 'javelinHit' }>;
+    expect(e).toBeDefined();
+    expect(e.x).toBe(11);
+    expect(e.y).toBe(22);
+    expect(e.faction).toBe('red');
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
+  });
+
+  it('远程命中且 weaponKind=arrow 仍发射 meleeHit（沿用现状）', () => {
+    const u = mkUnit({ x: 5, y: 5 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyDamage(u, 10, gs, { source: 'ranged', weaponKind: 'arrow' });
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(true);
+    expect(gs.events.some(ev => ev.kind === 'javelinHit')).toBe(false);
+  });
 });
