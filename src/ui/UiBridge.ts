@@ -73,7 +73,7 @@ export class UiBridge {
   }
 
   /** 答对算术题 → 解锁投矛/爆破 60 秒 */
-  unlockGate(gs: GameState, seconds = 60): void {
+  unlockGate(gs: GameState, seconds = 120): void {
     gs.sim.unlockTimer = seconds;
     this.emit('simChanged');
   }

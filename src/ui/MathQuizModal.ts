@@ -24,7 +24,7 @@ export class MathQuizModal {
   private buildCard(): void {
     const title = document.createElement('div');
     title.className = 'math-quiz-title';
-    title.textContent = '🔓 解锁投矛 / 爆破（60s）';
+    title.textContent = '🔓 解锁投矛 / 爆破';
     this.el.append(title);
 
     this.formulaEl = document.createElement('div');

@@ -101,6 +101,11 @@ export class BattleScene extends Phaser.Scene {
     this.ground.tilePositionX = cam.scrollX;
     this.ground.tilePositionY = cam.scrollY;
 
+    // 解锁倒计时：自然时间（不受倍速影响），仅 sim.running 时流逝（暂停冻结）
+    if (this.gameState.sim.running && this.gameState.sim.unlockTimer > 0) {
+      this.gameState.sim.unlockTimer = Math.max(0, this.gameState.sim.unlockTimer - deltaMs / 1000);
+    }
+
     const steps = this.clock.consume(deltaMs, this.gameState.sim.running, this.gameState.sim.speed);
     const dt = this.clock.fixedDt();
     for (let i = 0; i < steps; i++) {
@@ -108,10 +113,6 @@ export class BattleScene extends Phaser.Scene {
       this.unitManager.step(dt);
       CombatSystem.step(this.gameState, dt);
       this.gameState.sim.timeMs += dt * 1000;
-      // 解锁倒计时：仅 sim.running 时流逝（暂停冻结）
-      if (this.gameState.sim.unlockTimer > 0) {
-        this.gameState.sim.unlockTimer = Math.max(0, this.gameState.sim.unlockTimer - dt);
-      }
     }
 
     // 排干事件队列 → 派发到特效层 + 受击闪白
