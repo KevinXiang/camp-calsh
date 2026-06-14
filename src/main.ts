@@ -25,7 +25,7 @@ game.registry.set('bridge', bridge);
 
 game.events.once('ready', () => {
   const battle = game.scene.getScene('BattleScene') as BattleScene;
-  new BuildPanel(bridge);
+  new BuildPanel(bridge, () => battle.exposeGameState());
   new InfoPanel(bridge, battle);
   new HudController(bridge, () => battle.exposeGameState());
   new ControlBar(bridge, () => battle.exposeGameState());

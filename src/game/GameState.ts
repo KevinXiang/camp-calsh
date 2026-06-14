@@ -5,6 +5,8 @@ export interface SimState {
   running: boolean;
   speed: 1 | 2 | 4;
   timeMs: number;
+  /** 每阵营独立的产兵速度倍率（1=默认，>1 加快，<1 减慢）。玩家可在战斗中实时调整。 */
+  spawnMultiplier: { red: number; blue: number };
 }
 
 export class GameState {
@@ -12,7 +14,7 @@ export class GameState {
   readonly units = new Map<string, Unit>();
   projectiles: Projectile[] = [];
   events: CombatEvent[] = [];
-  sim: SimState = { running: false, speed: 1, timeMs: 0 };
+  sim: SimState = { running: false, speed: 1, timeMs: 0, spawnMultiplier: { red: 1, blue: 1 } };
   stats: { red: SideStats; blue: SideStats } = {
     red:  { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
     blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },

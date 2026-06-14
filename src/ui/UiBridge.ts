@@ -62,6 +62,16 @@ export class UiBridge {
     this.emit('simChanged');
   }
 
+  /** 设置某阵营的产兵倍率（slider 实时调节） */
+  setSpawnMultiplier(faction: Faction, mult: number, gs: GameState): void {
+    gs.sim.spawnMultiplier[faction] = mult;
+    this.emit('simChanged');
+  }
+
+  getSpawnMultiplier(faction: Faction, gs: GameState): number {
+    return gs.sim.spawnMultiplier[faction];
+  }
+
   /** 宣布胜方：停止模拟并触发胜利界面 */
   declareGameOver(winner: Faction, gs: GameState): void {
     if (this.gameOverFaction !== null) return;  // 只宣布一次

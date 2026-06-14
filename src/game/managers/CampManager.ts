@@ -1,10 +1,11 @@
-import type { Camp, Unit } from '../types';
+import type { Camp, Unit, Faction } from '../types';
 import { CAMP_DEFS } from '../../config/camps';
 import { UNIT_DEFS } from '../../config/units';
 
 export interface GameStateView {
   camps: Map<string, Camp>;
   units: Map<string, Unit>;
+  sim: { spawnMultiplier: { red: number; blue: number } };
   addUnit(u: Unit): void;
 }
 
@@ -15,7 +16,9 @@ export class CampManager {
     for (const c of this.gs.camps.values()) {
       if (c.destroyed) continue;
       if (c.aliveUnits >= (CAMP_DEFS[c.kind]?.unitCap ?? 20)) continue;
-      c.spawnTimer -= dt;
+      // 玩家可调倍率（>1 加快），下限 0.01 防 div-zero
+      const mult = Math.max(0.01, this.gs.sim.spawnMultiplier[c.faction as Faction] ?? 1);
+      c.spawnTimer -= dt * mult;
       if (c.spawnTimer <= 0) {
         const def = CAMP_DEFS[c.kind];
         const udef = UNIT_DEFS[c.kind];
