@@ -1,0 +1,53 @@
+export class ControlBar {
+    constructor(bridge, gs) {
+        this.bridge = bridge;
+        this.gs = gs;
+        this.root = document.createElement('div');
+        this.root.id = 'control-bar';
+        this.root.className = 'ui';
+        this.root.innerHTML = `
+      <button data-action="toggle-run" title="暂停/播放 (Space)">▶</button>
+      <button data-action="speed-1" class="active">1x</button>
+      <button data-action="speed-2">2x</button>
+      <button data-action="speed-4">4x</button>
+      <span class="control-sep"></span>
+      <button data-action="reset" title="重置战场">重置</button>
+    `;
+        document.body.append(this.root);
+        this.root.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn)
+                return;
+            const action = btn.dataset.action;
+            const gs = this.gs();
+            switch (action) {
+                case 'toggle-run':
+                    this.bridge.setRunning(!gs.sim.running, gs);
+                    break;
+                case 'speed-1':
+                    this.bridge.setSpeed(1, gs);
+                    break;
+                case 'speed-2':
+                    this.bridge.setSpeed(2, gs);
+                    break;
+                case 'speed-4':
+                    this.bridge.setSpeed(4, gs);
+                    break;
+                case 'reset':
+                    location.reload();
+                    break;
+            }
+        });
+        bridge.on('simChanged', () => this.render());
+        this.render();
+    }
+    render() {
+        const gs = this.gs();
+        const runBtn = this.root.querySelector('[data-action="toggle-run"]');
+        runBtn.textContent = gs.sim.running ? '⏸' : '▶';
+        for (const s of [1, 2, 4]) {
+            const btn = this.root.querySelector(`[data-action="speed-${s}"]`);
+            btn.classList.toggle('active', gs.sim.speed === s);
+        }
+    }
+}
