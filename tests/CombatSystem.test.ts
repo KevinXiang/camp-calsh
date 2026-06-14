@@ -68,4 +68,15 @@ describe('CombatSystem', () => {
     expect(u.alive).toBe(false);
     expect(c.aliveUnits).toBe(2);
   });
+
+  it('弹道 kind=bomb 命中触发 AOE（范围内多目标受伤）', () => {
+    const u1 = mkUnit({ id: 't1', faction: 'red', hp: 100, x: 200, y: 0 });
+    const u2 = mkUnit({ id: 't2', faction: 'red', hp: 100, x: 220, y: 0 });
+    const p: Projectile = { id: 'p1', kind: 'bomb', x: 195, y: 0, targetId: 't1', speed: 200, damage: 20, faction: 'blue', elapsed: 0, maxTime: 2 };
+    const gs = mkGS({ units: new Map([[u1.id, u1], [u2.id, u2]]), projectiles: [p] });
+    CombatSystem.step(gs, 1);
+    expect(u1.hp).toBe(80);
+    expect(u2.hp).toBe(80);
+    expect(gs.events.some(ev => ev.kind === 'bombExplosion')).toBe(true);
+  });
 });

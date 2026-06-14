@@ -108,4 +108,15 @@ describe('CombatSystem events', () => {
     expect(gs.events.some(ev => ev.kind === 'javelinHit')).toBe(false);
     expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
   });
+
+  it('炸弹命中普通单位推 bombHit 而非 meleeHit', () => {
+    const u = mkUnit({ kind: 'sword', x: 20, y: 30 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyDamage(u, 15, gs, { source: 'ranged', weaponKind: 'bomb' });
+    const e = gs.events.find(ev => ev.kind === 'bombHit') as Extract<CombatEvent, { kind: 'bombHit' }>;
+    expect(e).toBeDefined();
+    expect(e.x).toBe(20);
+    expect(e.y).toBe(30);
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
+  });
 });

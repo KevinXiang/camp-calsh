@@ -1,4 +1,4 @@
-import type { Camp, Unit, Projectile, SideStats } from '../types';
+import type { Camp, Unit, Projectile, SideStats, Faction } from '../types';
 import type { CombatEvent } from '../effects/types';
 
 export interface CombatGSView {
@@ -12,7 +12,7 @@ export interface CombatGSView {
 export interface DamageOpts {
   source: 'melee' | 'ranged';
   /** 仅 source==='ranged' 时有意义；用于命中特效分发。 */
-  weaponKind?: 'arrow' | 'javelin';
+  weaponKind?: 'arrow' | 'javelin' | 'bomb';
 }
 
 export class CombatSystem {
@@ -24,6 +24,9 @@ export class CombatSystem {
       // 优先级高于 weaponKind 分发 — 盾兵的身份特效压过武器特效。
       if (target.kind === 'shield') {
         gs.events.push({ kind: 'shieldBlock', x: target.x, y: target.y, faction: target.faction });
+      } else if (opts.weaponKind === 'bomb') {
+        // 炸弹 AOE 命中普通单位：独立 bombHit（仅触发闪白，无独立特效）
+        gs.events.push({ kind: 'bombHit', x: target.x, y: target.y, faction: target.faction });
       } else {
         const isJavelin = opts.source === 'ranged' && opts.weaponKind === 'javelin';
         gs.events.push(isJavelin
@@ -54,6 +57,31 @@ export class CombatSystem {
     }
   }
 
+  /**
+   * 炸弹爆炸：在 (x,y) radius 圆内对所有 alive 敌方 unit + 未摧毁敌方 camp 各扣 dmg。
+   * 盾兵仍走 shieldBlock（身份压过武器）；普通 unit 走 bombHit。
+   * 每次调用推一个 bombExplosion 事件（用于爆炸特效，与命中数无关）。
+   */
+  static applyAOE(
+    x: number, y: number, dmg: number,
+    attackerFaction: Faction, gs: CombatGSView, radius = 50,
+  ): void {
+    const r2 = radius * radius;
+    for (const u of gs.units.values()) {
+      if (!u.alive || u.faction === attackerFaction) continue;
+      const dx = u.x - x; const dy = u.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      CombatSystem.applyDamage(u, dmg, gs, { source: 'ranged', weaponKind: 'bomb' });
+    }
+    for (const c of gs.camps.values()) {
+      if (c.destroyed || c.faction === attackerFaction) continue;
+      const dx = c.x - x; const dy = c.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      CombatSystem.applyDamage(c, dmg, gs, { source: 'ranged' });
+    }
+    gs.events.push({ kind: 'bombExplosion', x, y, faction: attackerFaction });
+  }
+
   static step(gs: CombatGSView, dt: number): void {
     // 弹道推进/命中
     const survived: Projectile[] = [];
@@ -62,17 +90,27 @@ export class CombatSystem {
       if (p.elapsed >= p.maxTime) continue;
 
       const target = gs.units.get(p.targetId) ?? gs.camps.get(p.targetId);
-      if (!target) continue;
+      if (!target) {
+        // 炸弹：目标已死 → 原地爆炸（不消失）
+        if (p.kind === 'bomb') {
+          CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs);
+        }
+        continue;
+      }
 
       const tgt = target as { x: number; y: number };
       const dx = tgt.x - p.x; const dy = tgt.y - p.y;
       const dist = Math.hypot(dx, dy);
 
       if (dist < 12) {
-        CombatSystem.applyDamage(target as Unit | Camp, p.damage, gs, {
-          source: 'ranged',
-          weaponKind: p.kind,
-        });
+        if (p.kind === 'bomb') {
+          CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs);
+        } else {
+          CombatSystem.applyDamage(target as Unit | Camp, p.damage, gs, {
+            source: 'ranged',
+            weaponKind: p.kind,
+          });
+        }
         continue;
       }
 
