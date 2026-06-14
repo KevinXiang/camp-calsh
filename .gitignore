@@ -2,3 +2,6 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# superpowers brainstorm 运行时状态（PID/端口），mockup HTML 保留
+.superpowers/**/state/
