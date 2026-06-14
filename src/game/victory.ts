@@ -6,9 +6,8 @@ export interface VictoryView {
 }
 
 /**
- * 胜负判定（稳健、不闪烁）：
- * 一方【曾参战】（map 里有它的军营条目，含已摧毁）且现在 0 存活军营 + 0 存活单位
- * → 视为覆灭；对手未覆灭则对手胜。
+ * 胜负判定：一方【曾参战】且所有兵营被摧毁 → 视为覆灭；对手未覆灭则对手胜。
+ * 存活单位不影响判定（规则改为只判兵营）。
  * 关键：从未放置军营的一方不算覆灭（避免一放置就立即判胜）。
  */
 export function checkWinner(gs: VictoryView): Faction | null {
@@ -21,8 +20,8 @@ export function checkWinner(gs: VictoryView): Faction | null {
     if (!u.alive) continue;
     if (u.faction === 'red') redUnits++; else blueUnits++;
   }
-  const redDefeated = redEver > 0 && redCamps === 0 && redUnits === 0;
-  const blueDefeated = blueEver > 0 && blueCamps === 0 && blueUnits === 0;
+  const redDefeated = redEver > 0 && redCamps === 0;
+  const blueDefeated = blueEver > 0 && blueCamps === 0;
   if (redDefeated && !blueDefeated) return 'blue';
   if (blueDefeated && !redDefeated) return 'red';
   return null;

@@ -18,9 +18,9 @@ describe('checkWinner', () => {
     const v = mkView([['red', true], ['blue', false]], []);
     expect(checkWinner(v)).toBe('blue');
   });
-  it('红方军营全毁但仍有存活单位 → 未分胜负', () => {
+  it('红方军营全毁即败（存活单位不影响：规则改为只判兵营）', () => {
     const v = mkView([['red', true], ['blue', false]], [['red', true]]);
-    expect(checkWinner(v)).toBeNull();
+    expect(checkWinner(v)).toBe('blue');
   });
   it('蓝方彻底覆灭 → 红方胜', () => {
     const v = mkView([['red', false], ['blue', true]], []);
@@ -33,7 +33,7 @@ describe('checkWinner', () => {
     const v = mkView([['red', false]], []);  // 只放了红营，蓝方从未放置
     expect(checkWinner(v)).toBeNull();
   });
-  it('忽略已死亡单位', () => {
+  it('存活/死亡单位均不影响判定（只判兵营）', () => {
     const v = mkView([['red', true], ['blue', false]], [['red', false], ['red', false]]);
     expect(checkWinner(v)).toBe('blue');
   });
