@@ -3,8 +3,8 @@ import { CAMP_DEFS } from '../src/config/camps';
 import type { CampKind } from '../src/game/types';
 
 describe('CAMP_DEFS', () => {
-  it('包含 5 种军营', () => {
-    const kinds: CampKind[] = ['sword', 'shield', 'archer', 'javelin', 'bomb'];
+  it('包含 6 种军营', () => {
+    const kinds: CampKind[] = ['sword', 'shield', 'archer', 'javelin', 'bomb', 'medic'];
     for (const k of kinds) {
       expect(CAMP_DEFS[k]).toBeDefined();
     }
@@ -35,11 +35,16 @@ describe('CAMP_DEFS', () => {
     expect(CAMP_DEFS.bomb).toMatchObject({ maxHp: 400, spawnInterval: 7, unitCap: 12 });
   });
 
-  it('非爆破军营 unitCap 为 20，爆破营为 12', () => {
+  it('医疗营数值 350/7/10', () => {
+    expect(CAMP_DEFS.medic).toMatchObject({ maxHp: 350, spawnInterval: 7, unitCap: 10 });
+  });
+
+  it('非特殊军营 unitCap 为 20', () => {
     expect(CAMP_DEFS.sword.unitCap).toBe(20);
     expect(CAMP_DEFS.shield.unitCap).toBe(20);
     expect(CAMP_DEFS.archer.unitCap).toBe(20);
     expect(CAMP_DEFS.javelin.unitCap).toBe(20);
     expect(CAMP_DEFS.bomb.unitCap).toBe(12);
+    expect(CAMP_DEFS.medic.unitCap).toBe(10);
   });
 });

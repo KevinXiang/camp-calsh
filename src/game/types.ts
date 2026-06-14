@@ -1,6 +1,6 @@
 export type Faction = 'red' | 'blue';
 
-export type CampKind = 'sword' | 'shield' | 'archer' | 'javelin' | 'bomb';
+export type CampKind = 'sword' | 'shield' | 'archer' | 'javelin' | 'bomb' | 'medic';
 
 export type UnitKind = CampKind;
 
@@ -38,6 +38,8 @@ export interface UnitDef {
   attackRange: number;
   attackInterval: number;
   moveSpeed: number;
+  /** 治疗量（> 0 表示医疗兵） */
+  healAmount?: number;
 }
 
 export interface Unit {
@@ -60,7 +62,7 @@ export interface Unit {
   deathTimer: number;
 }
 
-export type ProjectileKind = 'arrow' | 'javelin' | 'bomb';
+export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal';
 
 export interface Projectile {
   id: string;
