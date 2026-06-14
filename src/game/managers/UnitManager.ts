@@ -28,6 +28,27 @@ export class UnitManager {
   }
 
   private acquireTarget(u: Unit): void {
+    // 医疗兵：搜索同阵营 alive unit + 未摧毁 camp 中 HP% 最低的
+    if (UNIT_DEFS[u.kind]?.healAmount) {
+      const range = UNIT_DEFS[u.kind]!.attackRange;
+      const friendlies: { id: string; hp: number; maxHp: number; d: number }[] = [];
+      for (const f of this.gs.units.values()) {
+        if (!f.alive || f.faction !== u.faction || f.hp >= f.maxHp) continue;
+        const d = Math.hypot(f.x - u.x, f.y - u.y);
+        if (d > range) continue;
+        friendlies.push({ id: f.id, hp: f.hp, maxHp: f.maxHp, d });
+      }
+      for (const c of this.gs.camps.values()) {
+        if (c.destroyed || c.faction !== u.faction || c.hp >= c.maxHp) continue;
+        const d = Math.hypot(c.x - u.x, c.y - u.y);
+        if (d > range) continue;
+        friendlies.push({ id: c.id, hp: c.hp, maxHp: c.maxHp, d });
+      }
+      friendlies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+      u.targetId = friendlies[0]?.id ?? null;
+      return;
+    }
+
     // 当前目标仍是存活敌方【小兵】→ 保持（避免在多个近敌间抖动）
     const cur = u.targetId ? this.gs.units.get(u.targetId) : undefined;
     if (cur && cur.alive && cur.faction !== u.faction) return;
@@ -70,7 +91,16 @@ export class UnitManager {
       u.attackTimer -= dt;
       if (u.attackTimer <= 0) {
         u.attackTimer = u.attackInterval;
-        if (UNIT_DEFS[u.kind]?.attackType === 'ranged') {
+        if (UNIT_DEFS[u.kind]?.healAmount) {
+          // 医疗兵：发治疗弹
+          const dx = tx - u.x; const dy = ty - u.y; const d = Math.hypot(dx, dy) || 1;
+          this.gs.projectiles.push({
+            id: crypto.randomUUID(), kind: 'heal',
+            x: u.x, y: u.y, targetId: u.targetId!,
+            speed: 200, damage: UNIT_DEFS[u.kind]!.healAmount!,
+            faction: u.faction, elapsed: 0, maxTime: 2,
+          });
+        } else if (UNIT_DEFS[u.kind]?.attackType === 'ranged') {
           const dx = tx - u.x; const dy = ty - u.y; const d = Math.hypot(dx, dy) || 1;
           const projKind: ProjectileKind =
             u.kind === 'javelin' ? 'javelin' :
