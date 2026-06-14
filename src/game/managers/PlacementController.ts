@@ -99,6 +99,15 @@ export class PlacementController {
       destroyed: false,
     };
     gs.addCamp(camp);
+
+    // 红蓝双方都有军营 → 自动开始战斗
+    if (!gs.sim.running && this.bridge.getGameOver() === null) {
+      const all = gs.allCamps();
+      if (all.some(c => c.faction === 'red') && all.some(c => c.faction === 'blue')) {
+        this.bridge.setRunning(true, gs);
+      }
+    }
+
     this.scene.refreshViews();
     this.preview.setVisible(false);
     this.bridge.selectCampKind(null);
