@@ -20,12 +20,17 @@ export class CombatSystem {
     target.hp -= dmg;
 
     if ('alive' in target) {
-      // 单位被打：发命中事件（无论是否致死）。weaponKind=javelin 走独立 javelinHit。
-      const isJavelin = opts.source === 'ranged' && opts.weaponKind === 'javelin';
-      gs.events.push(isJavelin
-        ? { kind: 'javelinHit', x: target.x, y: target.y, faction: target.faction }
-        : { kind: 'meleeHit',   x: target.x, y: target.y, faction: target.faction }
-      );
+      // 盾兵被打：所有命中（近战/弓/矛）走 shieldBlock 火花。
+      // 优先级高于 weaponKind 分发 — 盾兵的身份特效压过武器特效。
+      if (target.kind === 'shield') {
+        gs.events.push({ kind: 'shieldBlock', x: target.x, y: target.y, faction: target.faction });
+      } else {
+        const isJavelin = opts.source === 'ranged' && opts.weaponKind === 'javelin';
+        gs.events.push(isJavelin
+          ? { kind: 'javelinHit', x: target.x, y: target.y, faction: target.faction }
+          : { kind: 'meleeHit',   x: target.x, y: target.y, faction: target.faction }
+        );
+      }
       if (target.hp <= 0) {
         target.alive = false;
         target.state = 'idle';

@@ -87,4 +87,25 @@ describe('CombatSystem events', () => {
     expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(true);
     expect(gs.events.some(ev => ev.kind === 'javelinHit')).toBe(false);
   });
+
+  it('近战攻击盾兵时推 shieldBlock 替代 meleeHit', () => {
+    const u = mkUnit({ kind: 'shield', x: 33, y: 44 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyDamage(u, 5, gs, { source: 'melee' });
+    const e = gs.events.find(ev => ev.kind === 'shieldBlock') as Extract<CombatEvent, { kind: 'shieldBlock' }>;
+    expect(e).toBeDefined();
+    expect(e.x).toBe(33);
+    expect(e.y).toBe(44);
+    expect(e.faction).toBe('red');
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
+  });
+
+  it('javelin 攻击盾兵时推 shieldBlock 替代 javelinHit（盾兵身份压过武器）', () => {
+    const u = mkUnit({ kind: 'shield', x: 50, y: 60 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyDamage(u, 5, gs, { source: 'ranged', weaponKind: 'javelin' });
+    expect(gs.events.some(ev => ev.kind === 'shieldBlock')).toBe(true);
+    expect(gs.events.some(ev => ev.kind === 'javelinHit')).toBe(false);
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
+  });
 });
