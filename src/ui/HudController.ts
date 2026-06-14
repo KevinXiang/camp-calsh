@@ -52,6 +52,9 @@ export class HudController {
       </span>
       <span class="hud-winner">${winner}</span>
       <span class="hud-speed">${speedLabel}</span>
+      ${s.sim.unlockTimer > 0
+        ? `<span class="hud-section"><span class="hud-icon">🔓</span><span class="hud-num">${Math.ceil(s.sim.unlockTimer)}</span><span class="hud-sublabel">s 解锁</span></span>`
+        : `<span class="hud-section"><span class="hud-icon">🔒</span><span class="hud-sublabel">投矛/爆破锁定</span></span>`}
     `;
   }
 }

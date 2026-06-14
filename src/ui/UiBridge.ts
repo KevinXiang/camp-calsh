@@ -72,6 +72,17 @@ export class UiBridge {
     return gs.sim.spawnMultiplier[faction];
   }
 
+  /** 答对算术题 → 解锁投矛/爆破 60 秒 */
+  unlockGate(gs: GameState, seconds = 60): void {
+    gs.sim.unlockTimer = seconds;
+    this.emit('simChanged');
+  }
+
+  /** 当前是否在解锁窗口内 */
+  isUnlocked(gs: GameState): boolean {
+    return gs.sim.unlockTimer > 0;
+  }
+
   /** 宣布胜方：停止模拟并触发胜利界面 */
   declareGameOver(winner: Faction, gs: GameState): void {
     if (this.gameOverFaction !== null) return;  // 只宣布一次

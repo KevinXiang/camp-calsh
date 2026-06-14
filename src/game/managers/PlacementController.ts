@@ -82,6 +82,8 @@ export class PlacementController {
 
   private placeCamp(x: number, y: number, faction: Faction, kind: CampKind): void {
     const gs = this.scene.exposeGameState();
+    // 兜底：gated 兵种 + 锁定 → 拒绝
+    if ((kind === 'javelin' || kind === 'bomb') && gs.sim.unlockTimer <= 0) return;
     if (!canPlaceCamp(gs.allCamps(), x, y, CAMP_MIN_DISTANCE)) return;
 
     const def = CAMP_DEFS[kind];

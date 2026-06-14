@@ -108,12 +108,16 @@ export class BattleScene extends Phaser.Scene {
       this.unitManager.step(dt);
       CombatSystem.step(this.gameState, dt);
       this.gameState.sim.timeMs += dt * 1000;
+      // 解锁倒计时：仅 sim.running 时流逝（暂停冻结）
+      if (this.gameState.sim.unlockTimer > 0) {
+        this.gameState.sim.unlockTimer = Math.max(0, this.gameState.sim.unlockTimer - dt);
+      }
     }
 
     // 排干事件队列 → 派发到特效层 + 受击闪白
     if (this.gameState.events.length > 0) {
       for (const ev of this.gameState.events) {
-        if (ev.kind === 'meleeHit' || ev.kind === 'javelinHit' || ev.kind === 'shieldBlock') {
+        if (ev.kind === 'meleeHit' || ev.kind === 'javelinHit' || ev.kind === 'shieldBlock' || ev.kind === 'bombHit') {
           for (const u of this.gameState.allUnits()) {
             if (u.alive && Math.abs(u.x - ev.x) < 1 && Math.abs(u.y - ev.y) < 1) {
               const v = this.unitViews.get(u.id);
