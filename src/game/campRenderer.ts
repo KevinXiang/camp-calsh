@@ -32,16 +32,20 @@ export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Co
 }
 
 /**
- * 兵营摧毁蒙层：半透明灰覆盖 + 3 道黑色裂纹。
- * 直接画在营地 graphics 上（child[0]），不影响血条子对象。
+ * 兵营摧毁蒙层：在 container 上追加独立的覆层 graphics（child[3]）。
+ * 黑色半透明覆盖 + 3 道深红裂纹，确保在已有营地图形之上可见。
  */
-export function drawRuinedOverlay(g: Phaser.GameObjects.Graphics): void {
-  g.fillStyle(0x555555, 0.55);
-  g.fillRect(-42, -70, 84, 120);
-  g.lineStyle(2.5, 0x111111, 0.8);
-  g.lineBetween(-20, -5, -10, 15);
-  g.lineBetween(5, -20, 18, 8);
-  g.lineBetween(-12, 8, 8, -10);
+export function drawRuinedOverlay(view: Phaser.GameObjects.Container): void {
+  const overlay = view.scene.add.graphics();
+  // 黑色半透明蒙层（覆盖营地全部可见区域）
+  overlay.fillStyle(0x000000, 0.65);
+  overlay.fillRect(-50, -80, 100, 140);
+  // 3 道深红裂纹
+  overlay.lineStyle(3, 0x8b0000, 0.9);
+  overlay.lineBetween(-22, -8, -10, 18);
+  overlay.lineBetween(8, -22, 20, 10);
+  overlay.lineBetween(-14, 10, 10, -14);
+  view.add(overlay);
 }
 
 /** 剑营：宽方堡（76x44） + 4 城垛 + 顶部交叉双剑 */

@@ -162,8 +162,7 @@ export class BattleScene extends Phaser.Scene {
 
       // 摧毁状态切换（仅第一次触发）
       if (camp.destroyed && view.getData('ruined') !== true) {
-        const g = view.getAt(0) as Phaser.GameObjects.Graphics;
-        drawRuinedOverlay(g);
+        drawRuinedOverlay(view);
         view.setAlpha(0.75);
         view.setData('ruined', true);
       }
