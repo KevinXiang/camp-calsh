@@ -282,15 +282,33 @@ function playBowAnim(body: Phaser.GameObjects.Container): void {
   });
 }
 
-/** 投矛：body 上扬旋转 */
+/** 投矛三段式：蓄力 0.3s（后仰）→ 出手 0.15s（前甩）→ 归零 0.2s */
 function playJavelinAnim(body: Phaser.GameObjects.Container): void {
+  // 段 1：蓄力（身体后仰 ≈23°、轻微下压）
   body.scene.tweens.add({
     targets: body,
-    rotation: { from: 0, to: 0.2 },
-    y: { from: 0, to: -2 },
-    duration: 200,
-    yoyo: true,
+    rotation: 0.4,
+    y: -2,
+    duration: 300,
     ease: 'Cubic.easeOut',
+  });
+  // 段 2：出手（快速前甩到 -14°）
+  body.scene.tweens.add({
+    targets: body,
+    rotation: -0.25,
+    y: 0,
+    duration: 150,
+    ease: 'Cubic.easeIn',
+    delay: 300,
+  });
+  // 段 3：归零
+  body.scene.tweens.add({
+    targets: body,
+    rotation: 0,
+    y: 0,
+    duration: 200,
+    ease: 'Sine.easeOut',
+    delay: 450,
   });
 }
 
