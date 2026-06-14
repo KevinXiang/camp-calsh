@@ -6,7 +6,7 @@ export interface PlacementSelection {
   kind: CampKind | null;
 }
 
-type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged';
+type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged' | 'gameOver';
 
 export class UiBridge {
   private listeners: Record<EventName, Set<() => void>> = {
@@ -14,9 +14,11 @@ export class UiBridge {
     selectionChanged: new Set(),
     simChanged: new Set(),
     statsChanged: new Set(),
+    gameOver: new Set(),
   };
   private selection: PlacementSelection = { faction: 'red', kind: null };
   private selectedCampId: string | null = null;
+  private gameOverFaction: Faction | null = null;
 
   getSelection(): PlacementSelection {
     return this.selection;
@@ -58,6 +60,19 @@ export class UiBridge {
   setSpeed(s: 1 | 2 | 4, gs: GameState): void {
     gs.sim.speed = s;
     this.emit('simChanged');
+  }
+
+  /** 宣布胜方：停止模拟并触发胜利界面 */
+  declareGameOver(winner: Faction, gs: GameState): void {
+    if (this.gameOverFaction !== null) return;  // 只宣布一次
+    this.gameOverFaction = winner;
+    gs.sim.running = false;
+    this.emit('simChanged');
+    this.emit('gameOver');
+  }
+
+  getGameOver(): Faction | null {
+    return this.gameOverFaction;
   }
 
   on(event: EventName, cb: () => void): void {

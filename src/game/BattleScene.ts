@@ -10,6 +10,7 @@ import { CampManager } from './managers/CampManager';
 import { UnitManager } from './managers/UnitManager';
 import { CombatSystem } from './managers/CombatSystem';
 import { drawProjectile, updateProjectileView } from './projectileRenderer';
+import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
 import type { UiBridge } from '../ui/UiBridge';
 
@@ -124,6 +125,12 @@ export class BattleScene extends Phaser.Scene {
       }
       this.effects.dispatch(this.gameState.events);
       this.gameState.events.length = 0;
+    }
+
+    // 胜负判定：一方彻底覆灭 → 宣布胜方并停止
+    if (this.bridge.getGameOver() === null) {
+      const winner = checkWinner(this.gameState);
+      if (winner) this.bridge.declareGameOver(winner, this.gameState);
     }
 
     this.syncUnitViews();
