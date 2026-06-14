@@ -5,3 +5,11 @@ dist
 
 # superpowers brainstorm 运行时状态（PID/端口），mockup HTML 保留
 .superpowers/**/state/
+
+# TypeScript 编译产物（Vite 接管编译；tsc 仅类型检查，noEmit 已开，此处兜底）
+*.tsbuildinfo
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+tests/**/*.js
+
