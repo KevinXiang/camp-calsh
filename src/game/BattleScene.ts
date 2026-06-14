@@ -113,7 +113,7 @@ export class BattleScene extends Phaser.Scene {
     // 排干事件队列 → 派发到特效层 + 受击闪白
     if (this.gameState.events.length > 0) {
       for (const ev of this.gameState.events) {
-        if (ev.kind === 'meleeHit' || ev.kind === 'javelinHit') {
+        if (ev.kind === 'meleeHit' || ev.kind === 'javelinHit' || ev.kind === 'shieldBlock') {
           for (const u of this.gameState.allUnits()) {
             if (u.alive && Math.abs(u.x - ev.x) < 1 && Math.abs(u.y - ev.y) < 1) {
               const v = this.unitViews.get(u.id);
