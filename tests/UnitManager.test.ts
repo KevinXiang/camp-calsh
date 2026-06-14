@@ -53,4 +53,21 @@ describe('UnitManager', () => {
     new UnitManager(s).step(0.1);
     expect(ally.targetId).toBe('e');
   });
+  it('视野内有敌方小兵时切换目标，不再穿过直奔兵营', () => {
+    const redCamp = mkCamp({ id: 'rc', faction: 'red', x: -300, y: 0 });
+    const blueCamp = mkCamp({ id: 'bc', faction: 'blue', x: 300, y: 0 });
+    const red = mkUnit({ id: 'r', faction: 'red', x: -50, y: 0, targetId: 'bc' });
+    const blue = mkUnit({ id: 'b', faction: 'blue', x: 50, y: 0, targetId: 'rc' });
+    const s = mkState([redCamp, blueCamp], [red, blue]);
+    new UnitManager(s).step(0.1);
+    expect(red.targetId).toBe('b');
+    expect(blue.targetId).toBe('r');
+  });
+  it('视野内无敌方小兵时锁定敌方兵营（直接拆）', () => {
+    const blueCamp = mkCamp({ id: 'bc', faction: 'blue', x: 300, y: 0 });
+    const red = mkUnit({ id: 'r', faction: 'red', x: 0, y: 0, targetId: null });
+    const s = mkState([blueCamp], [red]);
+    new UnitManager(s).step(0.1);
+    expect(red.targetId).toBe('bc');
+  });
 });

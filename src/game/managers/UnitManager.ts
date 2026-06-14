@@ -28,36 +28,32 @@ export class UnitManager {
   }
 
   private acquireTarget(u: Unit): void {
-    if (u.targetId) {
-      const t = this.gs.units.get(u.targetId) ?? this.gs.camps.get(u.targetId);
-      const alive = t ? ('alive' in t ? (t as Unit).alive : !(t as Camp).destroyed) : false;
-      if (alive) return;
-      u.targetId = null;
-    }
+    // 当前目标仍是存活敌方【小兵】→ 保持（避免在多个近敌间抖动）
+    const cur = u.targetId ? this.gs.units.get(u.targetId) : undefined;
+    if (cur && cur.alive && cur.faction !== u.faction) return;
+
     const cands = this.grid.queryCircle(u.x, u.y, this.SIGHT);
+    const dist = (e: { x: number; y: number }) => Math.hypot(e.x - u.x, e.y - u.y);
+    const byDist = (a: Unit, b: Unit) => dist(a) - dist(b);
 
-    // 攻击距离内的敌方小兵（最近）
-    const inRange = cands.filter(e => e.faction !== u.faction && e.alive &&
-      Math.hypot(e.x - u.x, e.y - u.y) <= u.attackRange
-    );
-    if (inRange.length > 0) {
-      inRange.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y));
-      u.targetId = inRange[0].id;
-      return;
-    }
-
-    // 最近敌方小兵
+    // 1. 视野内有敌方小兵 → 锁定最近一只。
+    //    关键：即便当前正进军兵营也切换，这样两军相遇会交战而非穿过彼此。
     const enemies = cands.filter(e => e.faction !== u.faction && e.alive);
     if (enemies.length > 0) {
-      enemies.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y));
+      enemies.sort(byDist);
       u.targetId = enemies[0].id;
       return;
     }
 
-    // 最近敌方军营
+    // 2. 视野内无敌方小兵：保留或锁定最近敌方兵营（没小兵就直接拆）
+    if (u.targetId) {
+      const c = this.gs.camps.get(u.targetId);
+      if (c && !c.destroyed) return;  // 继续进军当前兵营
+      u.targetId = null;
+    }
     const camps = [...this.gs.camps.values()].filter(c => c.faction !== u.faction && !c.destroyed);
     if (camps.length > 0) {
-      camps.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y));
+      camps.sort((a, b) => dist(a) - dist(b));
       u.targetId = camps[0].id;
     }
   }
