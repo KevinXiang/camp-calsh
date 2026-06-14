@@ -29,6 +29,10 @@ describe('checkWinner', () => {
   it('双方都空（尚未放置）→ 无胜者', () => {
     expect(checkWinner(mkView([], []))).toBeNull();
   });
+  it('仅放置一方军营（另一方从未参战）→ 无胜者（回归：不应立即判胜）', () => {
+    const v = mkView([['red', false]], []);  // 只放了红营，蓝方从未放置
+    expect(checkWinner(v)).toBeNull();
+  });
   it('忽略已死亡单位', () => {
     const v = mkView([['red', true], ['blue', false]], [['red', false], ['red', false]]);
     expect(checkWinner(v)).toBe('blue');
