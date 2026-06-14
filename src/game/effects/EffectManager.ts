@@ -33,6 +33,7 @@ export class EffectManager {
     for (const ev of events) {
       switch (ev.kind) {
         case 'meleeHit':      this.spawnMeleeStars(ev.x, ev.y); break;
+        case 'javelinHit':    this.spawnJavelinHit(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
         case 'campHit':       this.shakeCamera(); break;
         case 'campDestroyed': this.spawnCampDestroy(ev.x, ev.y); break;
@@ -63,6 +64,46 @@ export class EffectManager {
       });
     }
     this.scene.time.delayedCall(700, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 投矛命中：中心大 ✦（缩放放大）+ 4 颗小 ✦ 散向四角（0.7s 生命） */
+  private spawnJavelinHit(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+
+    // 中心大星：缩放 0.4 → 1.8 + 淡出
+    const center = this.scene.add.text(0, 0, '✦', {
+      fontSize: '24px', color: '#fff176', fontStyle: 'bold',
+    }).setOrigin(0.5).setScale(0.4);
+    root.add(center);
+    this.scene.tweens.add({
+      targets: center,
+      scale: { from: 0.4, to: 1.8 },
+      alpha: { from: 1, to: 0 },
+      duration: 600,
+      ease: 'Cubic.easeOut',
+    });
+
+    // 四角小星：分别飞向 (+25,-15) (-25,-15) (+25,+15) (-25,+15)
+    const offsets: [number, number][] = [[25, -15], [-25, -15], [25, 15], [-25, 15]];
+    for (const [dx, dy] of offsets) {
+      const star = this.scene.add.text(0, 0, '✦', {
+        fontSize: '14px', color: '#fff176', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      root.add(star);
+      this.scene.tweens.add({
+        targets: star,
+        x: dx, y: dy,
+        alpha: { from: 1, to: 0 },
+        duration: 700,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    this.scene.time.delayedCall(750, () => {
       root.destroy();
       this.budget.release();
     });
