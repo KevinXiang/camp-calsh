@@ -258,15 +258,33 @@ function playSlashAnim(body: Phaser.GameObjects.Container): void {
   });
 }
 
-/** 盾兵猛击：body 前推 + 回弹 */
+/** 盾兵盾撞：后退蓄力 0.2s → 急速前冲 0.2s → 归位 0.25s。总 0.65s。 */
 function playBashAnim(body: Phaser.GameObjects.Container): void {
+  // 段 1：后退蓄力（-8px）
   body.scene.tweens.add({
     targets: body,
-    x: { from: 0, to: 4 },
+    x: -8,
     y: 0,
-    duration: 180,
-    yoyo: true,
-    ease: 'Sine.easeInOut',
+    duration: 200,
+    ease: 'Cubic.easeOut',
+  });
+  // 段 2：急速前冲（绝对位置 +12px，相对蓄力位置共 20px 急冲）
+  body.scene.tweens.add({
+    targets: body,
+    x: 12,
+    y: 0,
+    duration: 200,
+    ease: 'Cubic.easeIn',
+    delay: 200,
+  });
+  // 段 3：归零
+  body.scene.tweens.add({
+    targets: body,
+    x: 0,
+    y: 0,
+    duration: 250,
+    ease: 'Sine.easeOut',
+    delay: 400,
   });
 }
 
