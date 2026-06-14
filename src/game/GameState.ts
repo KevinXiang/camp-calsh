@@ -3,7 +3,7 @@ import type { CombatEvent } from './effects/types';
 
 export interface SimState {
   running: boolean;
-  speed: 1 | 2 | 4;
+  speed: 1 | 2 | 4 | 8 | 10;
   timeMs: number;
   /** 每阵营独立的产兵速度倍率（1=默认，>1 加快，<1 减慢）。玩家可在战斗中实时调整。 */
   spawnMultiplier: { red: number; blue: number };

@@ -3,7 +3,7 @@ export class SimulationClock {
   private readonly MAX_STEPS = 10;
   private accumulator = 0;
 
-  consume(deltaMs: number, running: boolean, speed: 1 | 2 | 4): number {
+  consume(deltaMs: number, running: boolean, speed: 1 | 2 | 4 | 8 | 10): number {
     if (!running) return 0;
     this.accumulator += (deltaMs / 1000) * speed;
     const steps = Math.min(Math.floor(this.accumulator / this.FIXED_DT), this.MAX_STEPS);
