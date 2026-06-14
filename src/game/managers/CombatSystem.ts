@@ -82,6 +82,12 @@ export class CombatSystem {
     gs.events.push({ kind: 'bombExplosion', x, y, faction: attackerFaction });
   }
 
+  /** 治疗目标：恢复 hp（不超过 maxHp），推 healHit 事件 */
+  static applyHeal(target: Unit | Camp, amount: number, gs: CombatGSView): void {
+    target.hp = Math.min(target.maxHp, target.hp + amount);
+    gs.events.push({ kind: 'healHit', x: target.x, y: target.y, faction: target.faction });
+  }
+
   static step(gs: CombatGSView, dt: number): void {
     // 弹道推进/命中
     const survived: Projectile[] = [];
@@ -103,6 +109,10 @@ export class CombatSystem {
       const dist = Math.hypot(dx, dy);
 
       if (dist < 12) {
+        if (p.kind === 'heal') {
+          CombatSystem.applyHeal(target as Unit | Camp, p.damage, gs);
+          continue;
+        }
         if (p.kind === 'bomb') {
           CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs);
         } else {

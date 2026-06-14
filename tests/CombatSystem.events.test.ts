@@ -119,4 +119,11 @@ describe('CombatSystem events', () => {
     expect(e.y).toBe(30);
     expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
   });
+
+  it('治疗弹命中推 healHit 事件', () => {
+    const u = mkUnit({ x: 15, y: 25, hp: 30 });
+    const gs = mkGS({ units: new Map([[u.id, u]]) });
+    CombatSystem.applyHeal(u, 20, gs);
+    expect(gs.events.some(ev => ev.kind === 'healHit')).toBe(true);
+  });
 });
