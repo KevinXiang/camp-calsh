@@ -34,6 +34,7 @@ export class EffectManager {
       switch (ev.kind) {
         case 'meleeHit':      this.spawnMeleeStars(ev.x, ev.y); break;
         case 'javelinHit':    this.spawnJavelinHit(ev.x, ev.y); break;
+        case 'shieldBlock':   this.spawnShieldSpark(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
         case 'campHit':       this.shakeCamera(); break;
         case 'campDestroyed': this.spawnCampDestroy(ev.x, ev.y); break;
@@ -104,6 +105,60 @@ export class EffectManager {
     }
 
     this.scene.time.delayedCall(750, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 盾击火花：3 道短斜线（黄/橙）+ 4 颗光点向外飞 + 盾边圆环短闪（0.4s 生命） */
+  private spawnShieldSpark(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+
+    // 3 道斜线火花：从命中点向后向上散
+    const lineSpecs = [
+      { x1:  0, y1:  0, x2: -12, y2: -10, color: 0xfff176 },
+      { x1:  0, y1:  0, x2: -14, y2:   2, color: 0xff8a65 },
+      { x1:  0, y1:  0, x2: -10, y2:  14, color: 0xfff176 },
+    ];
+    for (const s of lineSpecs) {
+      const g = this.scene.add.graphics();
+      g.lineStyle(2, s.color, 1);
+      g.lineBetween(s.x1, s.y1, s.x2, s.y2);
+      root.add(g);
+      this.scene.tweens.add({
+        targets: g,
+        alpha: { from: 1, to: 0 },
+        duration: 250,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    // 4 颗光点：从中心向外飞散并淡出
+    const pts: [number, number][] = [[-25, -8], [-22, 12], [-18, -20], [-28, 4]];
+    for (const [tx, ty] of pts) {
+      const c = this.scene.add.circle(0, 0, 1.8, 0xffeb3b, 1);
+      root.add(c);
+      this.scene.tweens.add({
+        targets: c,
+        x: tx, y: ty,
+        alpha: { from: 1, to: 0 },
+        duration: 350,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    // 盾边圆环短闪一下（仅 0.13s，强调"挡了一下"）
+    const ring = this.scene.add.circle(-12, 0, 9, 0x000000, 0).setStrokeStyle(1.5, 0xfff176, 0.9);
+    root.add(ring);
+    this.scene.tweens.add({
+      targets: ring,
+      alpha: { from: 1, to: 0 },
+      duration: 130,
+      ease: 'Cubic.easeOut',
+    });
+
+    this.scene.time.delayedCall(400, () => {
       root.destroy();
       this.budget.release();
     });
