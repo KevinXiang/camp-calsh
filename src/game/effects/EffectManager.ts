@@ -35,6 +35,8 @@ export class EffectManager {
         case 'meleeHit':      this.spawnMeleeStars(ev.x, ev.y); break;
         case 'javelinHit':    this.spawnJavelinHit(ev.x, ev.y); break;
         case 'shieldBlock':   this.spawnShieldSpark(ev.x, ev.y); break;
+        case 'bombHit':       break;   // 仅触发受击闪白，无独立特效
+        case 'bombExplosion': this.spawnBombExplosion(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
         case 'campHit':       this.shakeCamera(); break;
         case 'campDestroyed': this.spawnCampDestroy(ev.x, ev.y); break;
@@ -238,6 +240,64 @@ export class EffectManager {
     }
 
     this.scene.time.delayedCall(1800, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 炸弹爆炸：8 角黄星几何形 + 烟雾环扩散 + 5 颗火星（0.65s 生命） */
+  private spawnBombExplosion(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+
+    const star = this.scene.add.graphics();
+    star.fillStyle(0xffeb3b, 1);
+    star.lineStyle(2, 0xff6f00, 1);
+    star.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const r = i % 2 === 0 ? 25 : 10;
+      const a = (i / 16) * Math.PI * 2;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
+      if (i === 0) star.moveTo(px, py); else star.lineTo(px, py);
+    }
+    star.closePath();
+    star.fillPath();
+    star.strokePath();
+    star.setScale(0.3);
+    root.add(star);
+    this.scene.tweens.add({
+      targets: star,
+      scale: { from: 0.3, to: 1.5 },
+      alpha: { from: 1, to: 0 },
+      duration: 500,
+      ease: 'Cubic.easeOut',
+    });
+
+    const smoke = this.scene.add.circle(0, 0, 20, 0, 0).setStrokeStyle(2, 0x666666, 0.8);
+    root.add(smoke);
+    this.scene.tweens.add({
+      targets: smoke,
+      scale: { from: 1, to: 2.5 },
+      alpha: { from: 0.8, to: 0 },
+      duration: 600,
+      ease: 'Cubic.easeOut',
+    });
+
+    const sparkOff: [number, number][] = [[28, -8], [22, 18], [-26, 4], [-12, -22], [10, 26]];
+    for (const [tx, ty] of sparkOff) {
+      const c = this.scene.add.circle(0, 0, 2, 0xff7043, 1);
+      root.add(c);
+      this.scene.tweens.add({
+        targets: c,
+        x: tx, y: ty,
+        alpha: { from: 1, to: 0 },
+        duration: 500,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    this.scene.time.delayedCall(650, () => {
       root.destroy();
       this.budget.release();
     });
