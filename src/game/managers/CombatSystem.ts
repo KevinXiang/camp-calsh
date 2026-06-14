@@ -23,7 +23,7 @@ export class CombatSystem {
       if (target.hp <= 0) {
         target.alive = false;
         target.state = 'idle';
-        target.deathTimer = 0.3;
+        target.deathTimer = 1.0;
         const camp = gs.camps.get(target.campId);
         if (camp) camp.aliveUnits = Math.max(0, camp.aliveUnits - 1);
         const killerFaction = target.faction === 'red' ? 'blue' : 'red';
@@ -69,10 +69,13 @@ export class CombatSystem {
     }
     gs.projectiles = survived;
 
-    // 死亡计时（尸体保留）
+    // 死亡计时 + 尸体清理（deathTimer 归零后移除，防止 gs.units 无限增长卡死）
+    const toRemove: string[] = [];
     for (const u of gs.units.values()) {
       if (u.alive) continue;
       if (u.deathTimer > 0) u.deathTimer = Math.max(0, u.deathTimer - dt);
+      if (u.deathTimer <= 0) toRemove.push(u.id);
     }
+    for (const id of toRemove) gs.units.delete(id);
   }
 }

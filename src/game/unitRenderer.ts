@@ -169,7 +169,7 @@ export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): 
         view.add(g);
       });
     }
-    view.setAlpha(Math.max(0.4, unit.deathTimer / 0.3));
+    view.setAlpha(Math.max(0.4, unit.deathTimer / 1.0));
     return;
   }
 
