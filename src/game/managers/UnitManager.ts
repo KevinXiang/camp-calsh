@@ -1,4 +1,4 @@
-import type { Camp, Unit, Projectile, SideStats } from '../types';
+import type { Camp, Unit, Projectile, ProjectileKind, SideStats } from '../types';
 import type { CombatEvent } from '../effects/types';
 import { UNIT_DEFS } from '../../config/units';
 import { SpatialGrid } from '../spatial/SpatialGrid';
@@ -72,8 +72,11 @@ export class UnitManager {
         u.attackTimer = u.attackInterval;
         if (UNIT_DEFS[u.kind]?.attackType === 'ranged') {
           const dx = tx - u.x; const dy = ty - u.y; const d = Math.hypot(dx, dy) || 1;
+          const projKind: ProjectileKind =
+            u.kind === 'javelin' ? 'javelin' :
+            u.kind === 'bomb'    ? 'bomb'    : 'arrow';
           this.gs.projectiles.push({
-            id: crypto.randomUUID(), kind: u.kind === 'javelin' ? 'javelin' : 'arrow',
+            id: crypto.randomUUID(), kind: projKind,
             x: u.x, y: u.y, targetId: u.targetId!,
             speed: 200, damage: u.attack, faction: u.faction, elapsed: 0, maxTime: 2,
           });
