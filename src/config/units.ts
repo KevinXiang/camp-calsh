@@ -6,6 +6,6 @@ export const UNIT_DEFS: Record<UnitKind, UnitDef> = {
   archer:  { kind: 'archer',  attackType: 'ranged', maxHp: 60,  attack: 8,  attackRange: 180, attackInterval: 1.2, moveSpeed: 45 },
   javelin: { kind: 'javelin', attackType: 'ranged', maxHp: 70,  attack: 18, attackRange: 150, attackInterval: 2.0, moveSpeed: 40 },
   bomb:    { kind: 'bomb',    attackType: 'ranged', maxHp: 50,  attack: 15, attackRange: 120, attackInterval: 2.5, moveSpeed: 35 },
-  medic:     { kind: 'medic',     attackType: 'ranged', maxHp: 120, attack: 0,  attackRange: 150, attackInterval: 2.0, moveSpeed: 50, healAmount: 12, healSearchRange: 300 },
+  medic:     { kind: 'medic',     attackType: 'ranged', maxHp: 120, attack: 0,  attackRange: 150, attackInterval: 2.0, moveSpeed: 50, healAmount: 12, healSearchRange: 300, poisonDamage: 8, poisonDuration: 2, poisonRange: 120, poisonCooldown: 3 },
   artillery: { kind: 'artillery', attackType: 'ranged', maxHp: 70, attack: 12, attackRange: 250, attackInterval: 2.8, moveSpeed: 35 },
 };
