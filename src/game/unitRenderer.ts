@@ -137,6 +137,17 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       g.lineBetween(11.5, -4, 11.5, -2);
       break;
     }
+    case 'artillery': {
+      g.lineStyle(BODY_W - 0.3, color, 1);
+      g.lineBetween(0, -5, 8, -6);
+      g.fillStyle(0x424242, 1);
+      g.fillRect(8, -10, 10, 6);
+      g.lineStyle(1, 0x000000, 0.3);
+      g.strokeRect(8, -10, 10, 6);
+      g.fillStyle(0xff6d00, 0.9);
+      g.fillCircle(13, -13, 2);
+      break;
+    }
   }
 }
 
@@ -267,12 +278,13 @@ export function maybeTriggerAttackAnim(
   if (!justFired) return;
 
   switch (anim.kind) {
-    case 'sword':   playSlashAnim(body); break;
-    case 'shield':  playBashAnim(body); break;
-    case 'archer':  playBowAnim(body); break;
-    case 'javelin': playJavelinAnim(body); break;
-    case 'bomb':    playBombThrowAnim(body); break;
-    case 'medic':   playMedicAnim(body);      break;
+    case 'sword':      playSlashAnim(body); break;
+    case 'shield':     playBashAnim(body); break;
+    case 'archer':     playBowAnim(body); break;
+    case 'javelin':    playJavelinAnim(body); break;
+    case 'bomb':       playBombThrowAnim(body); break;
+    case 'medic':      playMedicAnim(body);      break;
+    case 'artillery':  playArtilleryAnim(body);  break;
   }
 }
 
@@ -401,4 +413,11 @@ export function triggerHitFlash(view: Phaser.GameObjects.Container): void {
     repeat: 1,
     ease: 'Sine.easeInOut',
   });
+}
+
+/** 火炮后坐力：body 后退 0.15s → 回弹 0.2s → 归零 0.15s */
+function playArtilleryAnim(body: Phaser.GameObjects.Container): void {
+  body.scene.tweens.add({ targets: body, x: -6, y: 0, duration: 150, ease: 'Cubic.easeOut' });
+  body.scene.tweens.add({ targets: body, x: 4, y: 0, duration: 200, ease: 'Cubic.easeIn', delay: 150 });
+  body.scene.tweens.add({ targets: body, x: 0, y: 0, duration: 150, ease: 'Sine.easeOut', delay: 350 });
 }
