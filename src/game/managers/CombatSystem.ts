@@ -134,6 +134,10 @@ export class CombatSystem {
           CombatSystem.applyHeal(target as Unit | Camp, p.damage, gs);
           continue;
         }
+        if (p.kind === 'artillery') {
+          CombatSystem.applyArtillerySplash(p.x, p.y, p.damage, p.faction, gs, 80, 2);
+          continue;
+        }
         if (p.kind === 'bomb') {
           CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs);
         } else {
