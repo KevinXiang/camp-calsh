@@ -42,6 +42,14 @@ export interface UnitDef {
   healAmount?: number;
   /** 医疗兵搜索受伤队友的范围（独立于 attackRange） */
   healSearchRange?: number;
+  /** 毒伤（每秒伤害，> 0 表示有毒攻击） */
+  poisonDamage?: number;
+  /** 中毒持续秒数 */
+  poisonDuration?: number;
+  /** 毒雾范围（px） */
+  poisonRange?: number;
+  /** 毒雾冷却秒数 */
+  poisonCooldown?: number;
 }
 
 export interface Unit {
@@ -62,6 +70,12 @@ export interface Unit {
   state: 'moving' | 'attacking' | 'idle';
   alive: boolean;
   deathTimer: number;
+  /** 中毒剩余时间（秒），> 0 表示中毒中 */
+  poisonTimer: number;
+  /** 中毒每秒伤害 */
+  poisonDps: number;
+  /** 毒雾冷却剩余秒数 */
+  poisonCooldownTimer: number;
 }
 
 export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery';

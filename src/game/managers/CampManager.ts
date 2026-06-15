@@ -37,6 +37,7 @@ export class CampManager {
           hp: udef.maxHp, maxHp: udef.maxHp, attack: udef.attack,
           attackRange: udef.attackRange, attackInterval: udef.attackInterval, moveSpeed: udef.moveSpeed,
           attackTimer: 0, targetId: null, state: 'moving', alive: true, deathTimer: 0,
+          poisonTimer: 0, poisonDps: 0, poisonCooldownTimer: 0,
         };
         this.gs.addUnit(unit);
         c.aliveUnits++;
