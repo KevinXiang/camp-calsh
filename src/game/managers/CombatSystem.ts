@@ -109,6 +109,35 @@ export class CombatSystem {
     gs.events.push({ kind: 'healHit', x: target.x, y: target.y, faction: target.faction });
   }
 
+  /** 施加中毒状态 */
+  static applyPoison(target: Unit, dps: number, duration: number, gs: CombatGSView): void {
+    target.poisonTimer = duration;
+    target.poisonDps = dps;
+    gs.events.push({ kind: 'poisonApplied', x: target.x, y: target.y, faction: target.faction });
+  }
+
+  /** 毒素 tick：每帧调用，扣除中毒伤害 */
+  static tickPoison(target: Unit, dt: number, gs: CombatGSView): void {
+    if (target.poisonTimer <= 0) return;
+    const effectiveDt = Math.min(dt, target.poisonTimer);
+    const tickDamage = target.poisonDps * effectiveDt;
+    target.hp -= tickDamage;
+    target.poisonTimer = Math.max(0, target.poisonTimer - dt);
+    if (target.poisonTimer <= 0) {
+      target.poisonDps = 0;
+    }
+    if (target.hp <= 0) {
+      target.alive = false;
+      target.state = 'idle';
+      target.deathTimer = 1.0;
+      const camp = gs.camps.get(target.campId);
+      if (camp) camp.aliveUnits = Math.max(0, camp.aliveUnits - 1);
+      const killerFaction = target.faction === 'red' ? 'blue' : 'red';
+      gs.stats[killerFaction].kills++;
+      gs.events.push({ kind: 'unitDeath', unitId: target.id, x: target.x, y: target.y, faction: target.faction });
+    }
+  }
+
   static step(gs: CombatGSView, dt: number): void {
     // 弹道推进/命中
     const survived: Projectile[] = [];
