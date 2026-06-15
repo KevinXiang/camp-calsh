@@ -30,7 +30,7 @@ export class UnitManager {
   private acquireTarget(u: Unit): void {
     // 医疗兵：搜索同阵营 alive unit + 未摧毁 camp 中 HP% 最低的
     if (UNIT_DEFS[u.kind]?.healAmount) {
-      const range = UNIT_DEFS[u.kind]!.attackRange;
+      const range = UNIT_DEFS[u.kind]!.healSearchRange ?? UNIT_DEFS[u.kind]!.attackRange;
       const friendlies: { id: string; hp: number; maxHp: number; d: number }[] = [];
       for (const f of this.gs.units.values()) {
         if (!f.alive || f.faction !== u.faction || f.hp >= f.maxHp) continue;

@@ -23,6 +23,6 @@ describe('UNIT_DEFS', () => {
     expect(UNIT_DEFS.bomb).toMatchObject({ attackType: 'ranged', maxHp: 50, attack: 15, attackRange: 120, attackInterval: 2.5, moveSpeed: 35 });
   });
   it('医疗兵数值', () => {
-    expect(UNIT_DEFS.medic).toMatchObject({ attackType: 'ranged', maxHp: 40, attack: 0, attackRange: 150, attackInterval: 2.0, moveSpeed: 40, healAmount: 12 });
+    expect(UNIT_DEFS.medic).toMatchObject({ attackType: 'ranged', maxHp: 120, attack: 0, attackRange: 150, attackInterval: 2.0, moveSpeed: 50, healAmount: 12, healSearchRange: 300 });
   });
 });

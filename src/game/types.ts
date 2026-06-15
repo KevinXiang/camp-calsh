@@ -40,6 +40,8 @@ export interface UnitDef {
   moveSpeed: number;
   /** 治疗量（> 0 表示医疗兵） */
   healAmount?: number;
+  /** 医疗兵搜索受伤队友的范围（独立于 attackRange） */
+  healSearchRange?: number;
 }
 
 export interface Unit {
