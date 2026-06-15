@@ -392,7 +392,7 @@ export class EffectManager {
     });
   }
 
-  /** 中毒标记：绿色泡泡漂浮 */
+  /** 中毒标记：紫色泡泡漂浮 */
   private spawnPoisonApplied(x: number, y: number): void {
     if (!this.budget.tryAdd()) return;
     const root = this.scene.add.container(x, y);
@@ -400,46 +400,57 @@ export class EffectManager {
       const bubble = this.scene.add.circle(
         (Math.random() - 0.5) * 20,
         (Math.random() - 0.5) * 10,
-        3 + Math.random() * 3,
-        0x4caf50, 0.7
+        4 + Math.random() * 4,
+        0x9c27b0, 0.85
       );
       root.add(bubble);
       this.scene.tweens.add({
         targets: bubble,
-        y: bubble.y - 20 - Math.random() * 15,
-        alpha: { from: 0.7, to: 0 },
-        scale: { from: 1, to: 0.5 },
-        duration: 600 + Math.random() * 200,
+        y: bubble.y - 25 - Math.random() * 15,
+        alpha: { from: 0.85, to: 0 },
+        scale: { from: 1.2, to: 0.4 },
+        duration: 700 + Math.random() * 200,
         delay: i * 80,
         ease: 'Cubic.easeOut',
       });
     }
-    this.scene.time.delayedCall(800, () => {
+    this.scene.time.delayedCall(900, () => {
       root.destroy();
       this.budget.release();
     });
   }
 
-  /** 毒雾释放：绿色泡泡向外扩散 */
+  /** 毒雾释放：紫色泡泡向外扩散 */
   private spawnPoisonCloud(x: number, y: number): void {
     if (!this.budget.tryAdd()) return;
     const root = this.scene.add.container(x, y);
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const dist = 30 + Math.random() * 40;
-      const bubble = this.scene.add.circle(0, 0, 5 + Math.random() * 4, 0x66bb6a, 0.6);
+    // 紫色毒雾圆环
+    const ring = this.scene.add.circle(0, 0, 15, 0, 0).setStrokeStyle(3, 0x9c27b0, 0.7);
+    root.add(ring);
+    this.scene.tweens.add({
+      targets: ring,
+      scale: { from: 0.5, to: 3 },
+      alpha: { from: 0.7, to: 0 },
+      duration: 600,
+      ease: 'Cubic.easeOut',
+    });
+    // 紫色泡泡向外扩散
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const dist = 40 + Math.random() * 50;
+      const bubble = this.scene.add.circle(0, 0, 5 + Math.random() * 5, 0x9c27b0, 0.8);
       root.add(bubble);
       this.scene.tweens.add({
         targets: bubble,
         x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist - 10,
-        alpha: { from: 0.6, to: 0 },
-        scale: { from: 1, to: 0.3 },
-        duration: 500 + Math.random() * 200,
+        y: Math.sin(angle) * dist - 15,
+        alpha: { from: 0.8, to: 0 },
+        scale: { from: 1.2, to: 0.2 },
+        duration: 600 + Math.random() * 200,
         ease: 'Cubic.easeOut',
       });
     }
-    this.scene.time.delayedCall(700, () => {
+    this.scene.time.delayedCall(800, () => {
       root.destroy();
       this.budget.release();
     });
