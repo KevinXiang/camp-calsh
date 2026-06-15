@@ -7,8 +7,9 @@ const KINDS: { key: CampKind; label: string; icon: string; gated?: boolean }[] =
   { key: 'sword', label: '剑兵营', icon: '⚔️' },
   { key: 'shield', label: '盾兵营', icon: '🛡️' },
   { key: 'archer', label: '弓兵营', icon: '🏹' },
-  { key: 'javelin', label: '投矛营', icon: '🔱', gated: true },
-  { key: 'bomb', label: '爆破营', icon: '💣', gated: true },
+  // 临时关闭算术题解锁门控，投矛/爆破可自由使用；需恢复时改回 gated: true
+  { key: 'javelin', label: '投矛营', icon: '🔱', gated: false },
+  { key: 'bomb', label: '爆破营', icon: '💣', gated: false },
   { key: 'medic', label: '医疗营', icon: '🏥' },
 ];
 
