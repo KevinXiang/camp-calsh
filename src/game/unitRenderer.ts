@@ -125,14 +125,15 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       g.fillRect(-6, -8, 12, 16);
       g.lineStyle(0.5, 0xcccccc, 1);
       g.strokeRect(-6, -8, 12, 16);
-      g.lineStyle(2.5, 0xe53935, 1);
+      // 阵营色十字（区分红蓝）
+      g.lineStyle(2.5, color, 1);
       g.lineBetween(0, -12, 0, 4);
       g.lineBetween(-6, -4, 6, -4);
       g.fillStyle(0xffffff, 1);
       g.fillRect(8, -6, 7, 5);
       g.lineStyle(0.5, 0x4caf50, 0.7);
       g.strokeRect(8, -6, 7, 5);
-      g.lineStyle(1.5, 0xe53935, 0.8);
+      g.lineStyle(1.5, color, 0.8);
       g.lineBetween(10, -5, 13, -2);
       g.lineBetween(11.5, -4, 11.5, -2);
       break;

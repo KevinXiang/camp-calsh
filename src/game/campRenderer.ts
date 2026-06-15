@@ -240,9 +240,9 @@ function drawBombCamp(g: Phaser.GameObjects.Graphics, color: number, _accent: nu
 }
 
 /**
- * 医疗营：白色主体 + 顶部红十字
+ * 医疗营：白色主体 + 阵营色十字 + 旗帜
  */
-function drawMedicCamp(g: Phaser.GameObjects.Graphics, _color: number, _accent: number): void {
+function drawMedicCamp(g: Phaser.GameObjects.Graphics, color: number, _accent: number): void {
   g.fillStyle(0x000000, 0.2);
   g.fillEllipse(0, 8, 60, 18);
   g.fillStyle(0xf5f5f5, 1);
@@ -253,9 +253,14 @@ function drawMedicCamp(g: Phaser.GameObjects.Graphics, _color: number, _accent: 
   g.fillRoundedRect(-8, 2, 16, 22, 3);
   g.lineStyle(2, 0x4caf50, 0.6);
   g.strokeRoundedRect(-8, 2, 16, 22, 3);
-  g.lineStyle(3, 0xe53935, 1);
+  // 阵营色十字（区分红蓝）
+  g.lineStyle(3, color, 1);
   g.lineBetween(0, -26, 0, -8);
   g.lineBetween(-8, -17, 8, -17);
+  // 阵营色旗帜
+  g.fillStyle(color, 0.9);
+  g.fillRect(-20, -30, 4, 18);
+  g.fillTriangle(-16, -30, -16, -22, -8, -26);
 }
 
 /**
