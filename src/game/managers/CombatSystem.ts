@@ -82,6 +82,27 @@ export class CombatSystem {
     gs.events.push({ kind: 'bombExplosion', x, y, faction: attackerFaction });
   }
 
+  /** 火炮溅射：在 (x,y) radius 圆内对所有 alive 敌方 unit + 未摧毁敌方 camp 各扣 dmg，camp 额外享受 campMultiplier */
+  static applyArtillerySplash(
+    x: number, y: number, dmg: number,
+    attackerFaction: Faction, gs: CombatGSView, radius: number, campMultiplier: number,
+  ): void {
+    const r2 = radius * radius;
+    for (const u of gs.units.values()) {
+      if (!u.alive || u.faction === attackerFaction) continue;
+      const dx = u.x - x; const dy = u.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      CombatSystem.applyDamage(u, dmg, gs, { source: 'ranged', weaponKind: 'javelin' });
+    }
+    for (const c of gs.camps.values()) {
+      if (c.destroyed || c.faction === attackerFaction) continue;
+      const dx = c.x - x; const dy = c.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      CombatSystem.applyDamage(c, dmg * campMultiplier, gs, { source: 'ranged' });
+    }
+    gs.events.push({ kind: 'artilleryExplosion', x, y, faction: attackerFaction });
+  }
+
   /** 治疗目标：恢复 hp（不超过 maxHp），推 healHit 事件 */
   static applyHeal(target: Unit | Camp, amount: number, gs: CombatGSView): void {
     target.hp = Math.min(target.maxHp, target.hp + amount);
