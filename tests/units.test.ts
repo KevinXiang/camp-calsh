@@ -25,4 +25,7 @@ describe('UNIT_DEFS', () => {
   it('医疗兵数值', () => {
     expect(UNIT_DEFS.medic).toMatchObject({ attackType: 'ranged', maxHp: 120, attack: 0, attackRange: 150, attackInterval: 2.0, moveSpeed: 50, healAmount: 12, healSearchRange: 300 });
   });
+  it('火炮兵数值', () => {
+    expect(UNIT_DEFS.artillery).toMatchObject({ attackType: 'ranged', maxHp: 70, attack: 12, attackRange: 250, attackInterval: 2.8, moveSpeed: 35 });
+  });
 });
