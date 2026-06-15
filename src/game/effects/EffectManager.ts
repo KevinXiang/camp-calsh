@@ -40,6 +40,8 @@ export class EffectManager {
         case 'bombExplosion': this.spawnBombExplosion(ev.x, ev.y); break;
         case 'artilleryExplosion': this.spawnArtilleryExplosion(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
+        case 'poisonApplied': this.spawnPoisonApplied(ev.x, ev.y); break;
+        case 'poisonCloud':   this.spawnPoisonCloud(ev.x, ev.y);   break;
         case 'campHit':       this.shakeCamera(); break;
         case 'campDestroyed': this.spawnCampDestroy(ev.x, ev.y); break;
       }
@@ -385,6 +387,59 @@ export class EffectManager {
     });
 
     this.scene.time.delayedCall(1200, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 中毒标记：绿色泡泡漂浮 */
+  private spawnPoisonApplied(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+    for (let i = 0; i < 3; i++) {
+      const bubble = this.scene.add.circle(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 10,
+        3 + Math.random() * 3,
+        0x4caf50, 0.7
+      );
+      root.add(bubble);
+      this.scene.tweens.add({
+        targets: bubble,
+        y: bubble.y - 20 - Math.random() * 15,
+        alpha: { from: 0.7, to: 0 },
+        scale: { from: 1, to: 0.5 },
+        duration: 600 + Math.random() * 200,
+        delay: i * 80,
+        ease: 'Cubic.easeOut',
+      });
+    }
+    this.scene.time.delayedCall(800, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 毒雾释放：绿色泡泡向外扩散 */
+  private spawnPoisonCloud(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const dist = 30 + Math.random() * 40;
+      const bubble = this.scene.add.circle(0, 0, 5 + Math.random() * 4, 0x66bb6a, 0.6);
+      root.add(bubble);
+      this.scene.tweens.add({
+        targets: bubble,
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist - 10,
+        alpha: { from: 0.6, to: 0 },
+        scale: { from: 1, to: 0.3 },
+        duration: 500 + Math.random() * 200,
+        ease: 'Cubic.easeOut',
+      });
+    }
+    this.scene.time.delayedCall(700, () => {
       root.destroy();
       this.budget.release();
     });
