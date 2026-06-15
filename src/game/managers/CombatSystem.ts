@@ -167,6 +167,32 @@ export class CombatSystem {
           CombatSystem.applyArtillerySplash(p.x, p.y, p.damage, p.faction, gs, 80, 2);
           continue;
         }
+        if (p.kind === 'poison') {
+          // 毒瓶命中：对范围内敌方施加中毒
+          const poisonRange = 300; // 与 medic.poisonRange 一致
+          for (const e of gs.units.values()) {
+            if (!e.alive || e.faction === p.faction) continue;
+            const d = Math.hypot(e.x - p.x, e.y - p.y);
+            if (d <= poisonRange) {
+              CombatSystem.applyPoison(e, p.damage, 2, gs);
+            }
+          }
+          for (const c of gs.camps.values()) {
+            if (c.destroyed || c.faction === p.faction) continue;
+            const d = Math.hypot(c.x - p.x, c.y - p.y);
+            if (d <= poisonRange) {
+              c.hp -= p.damage * 2;
+              if (c.hp <= 0) {
+                c.destroyed = true;
+                const killerFaction = c.faction === 'red' ? 'blue' : 'red';
+                gs.stats[killerFaction].campsDestroyed++;
+                gs.events.push({ kind: 'campDestroyed', campId: c.id, x: c.x, y: c.y, faction: c.faction });
+              }
+            }
+          }
+          gs.events.push({ kind: 'poisonCloud', x: p.x, y: p.y, faction: p.faction });
+          continue;
+        }
         if (p.kind === 'bomb') {
           CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs);
         } else {

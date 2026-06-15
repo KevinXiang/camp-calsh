@@ -35,32 +35,32 @@ export class UnitManager {
     if (!UNIT_DEFS[u.kind]?.healAmount || !UNIT_DEFS[u.kind]?.poisonDamage) return;
     if (u.poisonCooldownTimer > 0) return;
     const poisonRange = UNIT_DEFS[u.kind]!.poisonRange!;
-    let hasEnemy = false;
+    // 找最近敌方作为毒瓶目标
+    let nearestEnemy: { id: string; d: number } | null = null;
     for (const e of this.gs.units.values()) {
       if (!e.alive || e.faction === u.faction) continue;
       const d = Math.hypot(e.x - u.x, e.y - u.y);
-      if (d <= poisonRange) {
-        CombatSystem.applyPoison(e, UNIT_DEFS[u.kind]!.poisonDamage!, UNIT_DEFS[u.kind]!.poisonDuration!, this.gs);
-        hasEnemy = true;
+      if (d <= poisonRange && (!nearestEnemy || d < nearestEnemy.d)) {
+        nearestEnemy = { id: e.id, d };
       }
     }
+    // 也检查敌方军营
     for (const c of this.gs.camps.values()) {
       if (c.destroyed || c.faction === u.faction) continue;
       const d = Math.hypot(c.x - u.x, c.y - u.y);
-      if (d <= poisonRange) {
-        c.hp -= UNIT_DEFS[u.kind]!.poisonDamage! * UNIT_DEFS[u.kind]!.poisonDuration!;
-        hasEnemy = true;
-        if (c.hp <= 0) {
-          c.destroyed = true;
-          const killerFaction = c.faction === 'red' ? 'blue' : 'red';
-          this.gs.stats[killerFaction].campsDestroyed++;
-          this.gs.events.push({ kind: 'campDestroyed', campId: c.id, x: c.x, y: c.y, faction: c.faction });
-        }
+      if (d <= poisonRange && (!nearestEnemy || d < nearestEnemy.d)) {
+        nearestEnemy = { id: c.id, d };
       }
     }
-    if (hasEnemy) {
+    if (nearestEnemy) {
+      // 发射毒瓶弹道
+      this.gs.projectiles.push({
+        id: crypto.randomUUID(), kind: 'poison',
+        x: u.x, y: u.y, targetId: nearestEnemy.id,
+        speed: 150, damage: UNIT_DEFS[u.kind]!.poisonDamage!,
+        faction: u.faction, elapsed: 0, maxTime: 2.5,
+      });
       u.poisonCooldownTimer = UNIT_DEFS[u.kind]!.poisonCooldown!;
-      this.gs.events.push({ kind: 'poisonCloud', x: u.x, y: u.y, faction: u.faction });
     }
   }
 

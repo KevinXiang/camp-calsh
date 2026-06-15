@@ -78,7 +78,7 @@ export interface Unit {
   poisonCooldownTimer: number;
 }
 
-export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery';
+export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery' | 'poison';
 
 export interface Projectile {
   id: string;

@@ -22,11 +22,17 @@ const ARTILLERY_MAX_H = 60;
 /** 炮弹预期飞行距离，与 config/units.ts 中 artillery.attackRange=250 同步 */
 const ARTILLERY_EXPECTED_DIST = 250;
 
+/** 毒瓶抛物线峰值高度（世界坐标 px） */
+const POISON_MAX_H = 50;
+/** 毒瓶预期飞行距离，与 medic.poisonRange=300 同步 */
+const POISON_EXPECTED_DIST = 300;
+
 export function drawProjectile(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
   if (p.kind === 'javelin')    return drawJavelin(scene, p);
   if (p.kind === 'bomb')       return drawBomb(scene, p);
   if (p.kind === 'heal')       return drawHeal(scene, p);
   if (p.kind === 'artillery')  return drawArtillery(scene, p);
+  if (p.kind === 'poison')     return drawPoison(scene, p);
   return drawArrow(scene, p);
 }
 
@@ -35,6 +41,7 @@ export function updateProjectileView(view: Phaser.GameObjects.Container, p: Proj
   if (p.kind === 'bomb')       return updateBomb(view, p);
   if (p.kind === 'heal')       return updateHeal(view, p);
   if (p.kind === 'artillery')  return updateArtillery(view, p);
+  if (p.kind === 'poison')     return updatePoison(view, p);
   return updateArrow(view, p);
 }
 
@@ -230,6 +237,58 @@ function updateArtillery(view: Phaser.GameObjects.Container, p: Projectile): voi
 
   shaft.setPosition(0, -visualHeight);
   shaft.setRotation((t - 0.5) * Math.PI * 0.3);
+
+  shadow.setPosition(0, 0);
+  shadow.setScale(1 - 0.6 * heightRatio);
+  shadow.setAlpha(0.4 - 0.25 * heightRatio);
+}
+
+/* ───── 毒瓶：抛物线 + 影子 ───── */
+
+function drawPoison(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
+  const shadow = scene.add.ellipse(0, 0, 12, 4, 0x000000, 0.4);
+
+  const shaft = scene.add.graphics();
+  // 瓶身：紫色椭圆
+  shaft.fillStyle(0x9c27b0, 1);
+  shaft.fillEllipse(0, 0, 10, 14);
+  // 瓶口：深紫色
+  shaft.fillStyle(0x6a1b9a, 1);
+  shaft.fillRect(-3, -9, 6, 4);
+  // 标签：浅紫色
+  shaft.fillStyle(0xce93d8, 0.8);
+  shaft.fillRect(-4, -2, 8, 6);
+  // 毒液滴落：绿色
+  shaft.fillStyle(0x76ff03, 0.9);
+  shaft.fillCircle(0, 7, 2);
+
+  const root = scene.add.container(p.x, p.y, [shadow, shaft]);
+  root.setData('startX', p.x);
+  root.setData('startY', p.y);
+  root.setData('shadow', shadow);
+  root.setData('shaft', shaft);
+  return root;
+}
+
+function updatePoison(view: Phaser.GameObjects.Container, p: Projectile): void {
+  const shadow = view.getData('shadow') as Phaser.GameObjects.Ellipse | undefined;
+  const shaft = view.getData('shaft') as Phaser.GameObjects.Graphics | undefined;
+  const startX = view.getData('startX');
+  const startY = view.getData('startY');
+  if (!shadow || !shaft || !Number.isFinite(startX) || !Number.isFinite(startY)) {
+    view.setPosition(p.x, p.y);
+    return;
+  }
+
+  view.setPosition(p.x, p.y);
+
+  const traveled = Math.hypot(p.x - (startX as number), p.y - (startY as number));
+  const t = Math.min(1, traveled / POISON_EXPECTED_DIST);
+  const visualHeight = 4 * POISON_MAX_H * t * (1 - t);
+  const heightRatio = visualHeight / POISON_MAX_H;
+
+  shaft.setPosition(0, -visualHeight);
+  shaft.setRotation((t - 0.5) * Math.PI * 0.4);
 
   shadow.setPosition(0, 0);
   shadow.setScale(1 - 0.6 * heightRatio);
