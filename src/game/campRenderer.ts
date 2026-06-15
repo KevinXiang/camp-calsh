@@ -17,7 +17,8 @@ export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Co
     case 'archer':  drawArcherCamp(g, color, accent);  break;
     case 'javelin': drawJavelinCamp(g, color, accent); break;
     case 'bomb':    drawBombCamp(g, color, accent);     break;
-    case 'medic':   drawMedicCamp(g, color, accent);    break;
+    case 'medic':      drawMedicCamp(g, color, accent);      break;
+    case 'artillery':  drawArtilleryCamp(g, color, accent);  break;
   }
 
   // 血条（头顶，与单位血条同风格）
@@ -255,4 +256,47 @@ function drawMedicCamp(g: Phaser.GameObjects.Graphics, _color: number, _accent: 
   g.lineStyle(3, 0xe53935, 1);
   g.lineBetween(0, -26, 0, -8);
   g.lineBetween(-8, -17, 8, -17);
+}
+
+/**
+ * 火炮营：深色基座 + 炮管 + 火焰装饰
+ */
+function drawArtilleryCamp(g: Phaser.GameObjects.Graphics, color: number, accent: number): void {
+  // 落影
+  g.fillStyle(0x000000, 0.2);
+  g.fillEllipse(0, 42, 80, 24);
+
+  // 主体（矮宽基座）
+  g.fillStyle(color, 1);
+  g.fillRoundedRect(-36, -8, 72, 36, 4);
+  g.lineStyle(2, 0x000000, 0.25);
+  g.strokeRoundedRect(-36, -8, 72, 36, 4);
+
+  // 炮台（圆形底座）
+  g.fillStyle(accent, 1);
+  g.fillCircle(0, -16, 18);
+  g.lineStyle(2, 0x000000, 0.3);
+  g.strokeCircle(0, -16, 18);
+
+  // 炮管（斜向上）
+  g.fillStyle(0x424242, 1);
+  g.fillRect(-4, -40, 8, 24);
+  g.lineStyle(1.5, 0x000000, 0.3);
+  g.strokeRect(-4, -40, 8, 24);
+
+  // 炮口火焰装饰
+  g.fillStyle(0xff6d00, 0.9);
+  g.fillCircle(0, -42, 4);
+  g.fillStyle(0xffab00, 0.7);
+  g.fillCircle(0, -44, 2.5);
+
+  // 装饰条
+  g.fillStyle(accent, 0.6);
+  g.fillRect(-34, 8, 68, 5);
+
+  // 门洞
+  g.fillStyle(0x000000, 0.35);
+  g.fillRoundedRect(-9, 2, 18, 24, 3);
+  g.lineStyle(2, accent, 0.5);
+  g.strokeRoundedRect(-9, 2, 18, 24, 3);
 }
