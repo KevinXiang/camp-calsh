@@ -3,7 +3,7 @@ import { FACTION_COLORS } from '../config/colors';
 import type { Camp, CampKind } from './types';
 
 const KIND_ACCENT: Record<CampKind, number> = {
-  sword: 0xffd54f, shield: 0x90a4ae, archer: 0x66bb6a, javelin: 0xff8a65, bomb: 0xc62828, medic: 0xffffff,
+  sword: 0xffd54f, shield: 0x90a4ae, archer: 0x66bb6a, javelin: 0xff8a65, bomb: 0xc62828, medic: 0xffffff, artillery: 0x8d6e63,
 };
 
 export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Container {

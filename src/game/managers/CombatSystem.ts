@@ -12,7 +12,7 @@ export interface CombatGSView {
 export interface DamageOpts {
   source: 'melee' | 'ranged';
   /** 仅 source==='ranged' 时有意义；用于命中特效分发。 */
-  weaponKind?: 'arrow' | 'javelin' | 'bomb';
+  weaponKind?: 'arrow' | 'javelin' | 'bomb' | 'artillery';
 }
 
 export class CombatSystem {

@@ -1,6 +1,6 @@
 export type Faction = 'red' | 'blue';
 
-export type CampKind = 'sword' | 'shield' | 'archer' | 'javelin' | 'bomb' | 'medic';
+export type CampKind = 'sword' | 'shield' | 'archer' | 'javelin' | 'bomb' | 'medic' | 'artillery';
 
 export type UnitKind = CampKind;
 
@@ -64,7 +64,7 @@ export interface Unit {
   deathTimer: number;
 }
 
-export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal';
+export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery';
 
 export interface Projectile {
   id: string;
