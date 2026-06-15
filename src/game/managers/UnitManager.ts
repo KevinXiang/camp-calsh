@@ -100,6 +100,14 @@ export class UnitManager {
             speed: 200, damage: UNIT_DEFS[u.kind]!.healAmount!,
             faction: u.faction, elapsed: 0, maxTime: 2,
           });
+        } else if (u.kind === 'artillery') {
+          // 火炮兵：抛物线炮弹
+          this.gs.projectiles.push({
+            id: crypto.randomUUID(), kind: 'artillery',
+            x: u.x, y: u.y, targetId: u.targetId!,
+            speed: 180, damage: UNIT_DEFS[u.kind]!.attack,
+            faction: u.faction, elapsed: 0, maxTime: 2.5,
+          });
         } else if (UNIT_DEFS[u.kind]?.attackType === 'ranged') {
           const dx = tx - u.x; const dy = ty - u.y; const d = Math.hypot(dx, dy) || 1;
           const projKind: ProjectileKind =
