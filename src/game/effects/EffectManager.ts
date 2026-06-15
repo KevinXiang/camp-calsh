@@ -38,6 +38,7 @@ export class EffectManager {
         case 'healHit':       this.spawnHealHit(ev.x, ev.y); break;
         case 'bombHit':       break;   // 仅触发受击闪白，无独立特效
         case 'bombExplosion': this.spawnBombExplosion(ev.x, ev.y); break;
+        case 'artilleryExplosion': this.spawnArtilleryExplosion(ev.x, ev.y); break;
         case 'unitDeath':     this.spawnDeathStars(ev.x, ev.y); break;
         case 'campHit':       this.shakeCamera(); break;
         case 'campDestroyed': this.spawnCampDestroy(ev.x, ev.y); break;
@@ -315,5 +316,77 @@ export class EffectManager {
     root.add(star);
     this.scene.tweens.add({ targets: star, y: -20, alpha: { from: 1, to: 0 }, duration: 500, ease: 'Cubic.easeOut' });
     this.scene.time.delayedCall(550, () => { root.destroy(); this.budget.release(); });
+  }
+
+  /** 火炮爆炸：火焰核心 + 烟圈 + 冲击波 + 碎片飞溅 + 焦痕（1.2s 生命） */
+  private spawnArtilleryExplosion(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+
+    // 火焰核心：橙红色圆形扩散
+    const fire = this.scene.add.circle(0, 0, 15, 0xff6d00, 1);
+    root.add(fire);
+    this.scene.tweens.add({
+      targets: fire,
+      scale: { from: 0.3, to: 2.5 },
+      alpha: { from: 1, to: 0 },
+      duration: 300,
+      ease: 'Cubic.easeOut',
+    });
+
+    // 烟圈：灰色圆环向外扩散
+    const smoke = this.scene.add.circle(0, 0, 20, 0, 0).setStrokeStyle(3, 0x666666, 0.8);
+    root.add(smoke);
+    this.scene.tweens.add({
+      targets: smoke,
+      scale: { from: 0.5, to: 3 },
+      alpha: { from: 0.8, to: 0 },
+      duration: 500,
+      ease: 'Cubic.easeOut',
+    });
+
+    // 冲击波：白色半透明圆环快速扩散
+    const wave = this.scene.add.circle(0, 0, 10, 0, 0).setStrokeStyle(2, 0xffffff, 0.6);
+    root.add(wave);
+    this.scene.tweens.add({
+      targets: wave,
+      scale: { from: 1, to: 4 },
+      alpha: { from: 0.6, to: 0 },
+      duration: 200,
+      ease: 'Cubic.easeOut',
+    });
+
+    // 碎片飞溅：4 个小碎片向四周弹射
+    const fragColors = [0xff6d00, 0xffab00, 0x424242, 0x795548];
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 40 + Math.random() * 30;
+      const frag = this.scene.add.rectangle(0, 0, 6, 4, fragColors[i]).setOrigin(0.5);
+      root.add(frag);
+      this.scene.tweens.add({
+        targets: frag,
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        angle: Math.random() * 360,
+        alpha: { from: 1, to: 0 },
+        duration: 600,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    // 焦痕：命中点留下短暂焦黑痕迹
+    const scorch = this.scene.add.circle(0, 0, 12, 0x1a1a1a, 0.5);
+    root.add(scorch);
+    this.scene.tweens.add({
+      targets: scorch,
+      alpha: { from: 0.5, to: 0 },
+      duration: 1000,
+      delay: 200,
+    });
+
+    this.scene.time.delayedCall(1200, () => {
+      root.destroy();
+      this.budget.release();
+    });
   }
 }
