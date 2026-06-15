@@ -101,31 +101,6 @@ export class UnitManager {
             speed: 200, damage: UNIT_DEFS[u.kind]!.healAmount!,
             faction: u.faction, elapsed: 0, maxTime: 2,
           });
-          if (UNIT_DEFS[u.kind]?.poisonDamage && u.poisonCooldownTimer <= 0) {
-            const poisonRange = UNIT_DEFS[u.kind]!.poisonRange!;
-            for (const e of this.gs.units.values()) {
-              if (!e.alive || e.faction === u.faction) continue;
-              const d = Math.hypot(e.x - u.x, e.y - u.y);
-              if (d <= poisonRange) {
-                CombatSystem.applyPoison(e, UNIT_DEFS[u.kind]!.poisonDamage!, UNIT_DEFS[u.kind]!.poisonDuration!, this.gs);
-              }
-            }
-            for (const c of this.gs.camps.values()) {
-              if (c.destroyed || c.faction === u.faction) continue;
-              const d = Math.hypot(c.x - u.x, c.y - u.y);
-              if (d <= poisonRange) {
-                c.hp -= UNIT_DEFS[u.kind]!.poisonDamage! * UNIT_DEFS[u.kind]!.poisonDuration!;
-                if (c.hp <= 0) {
-                  c.destroyed = true;
-                  const killerFaction = c.faction === 'red' ? 'blue' : 'red';
-                  this.gs.stats[killerFaction].campsDestroyed++;
-                  this.gs.events.push({ kind: 'campDestroyed', campId: c.id, x: c.x, y: c.y, faction: c.faction });
-                }
-              }
-            }
-            u.poisonCooldownTimer = UNIT_DEFS[u.kind]!.poisonCooldown!;
-            this.gs.events.push({ kind: 'poisonCloud', x: u.x, y: u.y, faction: u.faction });
-          }
         } else if (u.kind === 'artillery') {
           // 火炮兵：抛物线炮弹
           this.gs.projectiles.push({
@@ -146,6 +121,37 @@ export class UnitManager {
           });
         } else {
           CombatSystem.applyDamage(target as Unit | Camp, u.attack, this.gs, { source: 'melee' });
+        }
+      }
+      // 医疗兵毒雾（独立于治疗弹，只要有敌方在范围内就释放）
+      if (UNIT_DEFS[u.kind]?.healAmount && UNIT_DEFS[u.kind]?.poisonDamage && u.poisonCooldownTimer <= 0) {
+        const poisonRange = UNIT_DEFS[u.kind]!.poisonRange!;
+        let hasEnemy = false;
+        for (const e of this.gs.units.values()) {
+          if (!e.alive || e.faction === u.faction) continue;
+          const d = Math.hypot(e.x - u.x, e.y - u.y);
+          if (d <= poisonRange) {
+            CombatSystem.applyPoison(e, UNIT_DEFS[u.kind]!.poisonDamage!, UNIT_DEFS[u.kind]!.poisonDuration!, this.gs);
+            hasEnemy = true;
+          }
+        }
+        for (const c of this.gs.camps.values()) {
+          if (c.destroyed || c.faction === u.faction) continue;
+          const d = Math.hypot(c.x - u.x, c.y - u.y);
+          if (d <= poisonRange) {
+            c.hp -= UNIT_DEFS[u.kind]!.poisonDamage! * UNIT_DEFS[u.kind]!.poisonDuration!;
+            hasEnemy = true;
+            if (c.hp <= 0) {
+              c.destroyed = true;
+              const killerFaction = c.faction === 'red' ? 'blue' : 'red';
+              this.gs.stats[killerFaction].campsDestroyed++;
+              this.gs.events.push({ kind: 'campDestroyed', campId: c.id, x: c.x, y: c.y, faction: c.faction });
+            }
+          }
+        }
+        if (hasEnemy) {
+          u.poisonCooldownTimer = UNIT_DEFS[u.kind]!.poisonCooldown!;
+          this.gs.events.push({ kind: 'poisonCloud', x: u.x, y: u.y, faction: u.faction });
         }
       }
     } else {
