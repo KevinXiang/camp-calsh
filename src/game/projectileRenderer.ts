@@ -17,17 +17,24 @@ const BOMB_MAX_H = 35;
 /** 炸弹预期飞行距离，与 config/units.ts 中 bomb.attackRange=120 同步 */
 const BOMB_EXPECTED_DIST = 120;
 
+/** 炮弹抛物线峰值高度（世界坐标 px） */
+const ARTILLERY_MAX_H = 60;
+/** 炮弹预期飞行距离，与 config/units.ts 中 artillery.attackRange=250 同步 */
+const ARTILLERY_EXPECTED_DIST = 250;
+
 export function drawProjectile(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
-  if (p.kind === 'javelin') return drawJavelin(scene, p);
-  if (p.kind === 'bomb')    return drawBomb(scene, p);
-  if (p.kind === 'heal')    return drawHeal(scene, p);
+  if (p.kind === 'javelin')    return drawJavelin(scene, p);
+  if (p.kind === 'bomb')       return drawBomb(scene, p);
+  if (p.kind === 'heal')       return drawHeal(scene, p);
+  if (p.kind === 'artillery')  return drawArtillery(scene, p);
   return drawArrow(scene, p);
 }
 
 export function updateProjectileView(view: Phaser.GameObjects.Container, p: Projectile): void {
-  if (p.kind === 'javelin') return updateJavelin(view, p);
-  if (p.kind === 'bomb')    return updateBomb(view, p);
-  if (p.kind === 'heal')    return updateHeal(view, p);
+  if (p.kind === 'javelin')    return updateJavelin(view, p);
+  if (p.kind === 'bomb')       return updateBomb(view, p);
+  if (p.kind === 'heal')       return updateHeal(view, p);
+  if (p.kind === 'artillery')  return updateArtillery(view, p);
   return updateArrow(view, p);
 }
 
@@ -181,4 +188,50 @@ function drawHeal(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Contai
 
 function updateHeal(view: Phaser.GameObjects.Container, p: Projectile): void {
   view.setPosition(p.x, p.y);
+}
+
+/* ───── 炮弹：抛物线 + 烟雾尾迹 + 影子 ───── */
+
+function drawArtillery(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
+  const shadow = scene.add.ellipse(0, 0, 16, 6, 0x000000, 0.4);
+
+  const shaft = scene.add.graphics();
+  shaft.fillStyle(0x424242, 1);
+  shaft.fillCircle(0, 0, 6);
+  shaft.fillStyle(0xff6d00, 0.9);
+  shaft.fillCircle(-5, 0, 3);
+  shaft.fillStyle(0xffab00, 0.7);
+  shaft.fillCircle(-7, 0, 2);
+
+  const root = scene.add.container(p.x, p.y, [shadow, shaft]);
+  root.setData('startX', p.x);
+  root.setData('startY', p.y);
+  root.setData('shadow', shadow);
+  root.setData('shaft', shaft);
+  return root;
+}
+
+function updateArtillery(view: Phaser.GameObjects.Container, p: Projectile): void {
+  const shadow = view.getData('shadow') as Phaser.GameObjects.Ellipse | undefined;
+  const shaft = view.getData('shaft') as Phaser.GameObjects.Graphics | undefined;
+  const startX = view.getData('startX');
+  const startY = view.getData('startY');
+  if (!shadow || !shaft || !Number.isFinite(startX) || !Number.isFinite(startY)) {
+    view.setPosition(p.x, p.y);
+    return;
+  }
+
+  view.setPosition(p.x, p.y);
+
+  const traveled = Math.hypot(p.x - (startX as number), p.y - (startY as number));
+  const t = Math.min(1, traveled / ARTILLERY_EXPECTED_DIST);
+  const visualHeight = 4 * ARTILLERY_MAX_H * t * (1 - t);
+  const heightRatio = visualHeight / ARTILLERY_MAX_H;
+
+  shaft.setPosition(0, -visualHeight);
+  shaft.setRotation((t - 0.5) * Math.PI * 0.3);
+
+  shadow.setPosition(0, 0);
+  shadow.setScale(1 - 0.6 * heightRatio);
+  shadow.setAlpha(0.4 - 0.25 * heightRatio);
 }
