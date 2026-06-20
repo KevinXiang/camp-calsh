@@ -97,6 +97,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    this.selectionInput.update(deltaMs);
     const cam = this.cameras.main;
     this.ground.tilePositionX = cam.scrollX;
     this.ground.tilePositionY = cam.scrollY;
