@@ -7,6 +7,7 @@ import { InfoPanel } from './ui/InfoPanel';
 import { HudController } from './ui/HudController';
 import { ControlBar } from './ui/ControlBar';
 import { VictoryOverlay } from './ui/VictoryOverlay';
+import { CampTooltip } from './ui/CampTooltip';
 import './ui/ui.css';
 
 const bridge = new UiBridge();
@@ -29,5 +30,6 @@ game.events.once('ready', () => {
   new InfoPanel(bridge, battle);
   new HudController(bridge, () => battle.exposeGameState());
   new ControlBar(bridge, () => battle.exposeGameState());
+  new CampTooltip(bridge);
   new VictoryOverlay(bridge);
 });

@@ -176,3 +176,26 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 /* ---- Camp button locked ---- */
 .camp-btn.locked { opacity: 0.55; position: relative; }
 .camp-btn.locked::after { content: '🔒'; position: absolute; top: 2px; right: 4px; font-size: 0.8em; }
+
+/* ===== 军营悬停提示框 ===== */
+#camp-tooltip {
+  top: 360px; right: 12px; width: 220px;
+  background: rgba(0,0,0,0.5); padding: 10px 12px;
+  border-radius: 8px; color: #fff; font-size: 13px;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+#camp-tooltip .tooltip-header {
+  font-size: 15px; font-weight: bold; margin-bottom: 6px;
+  padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+#camp-tooltip .tooltip-section {
+  font-size: 12px; color: #ffeb3b; margin-top: 8px; margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+#camp-tooltip .tooltip-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 1px 0;
+}
+#camp-tooltip .tooltip-label { color: rgba(255,255,255,0.65); }
+#camp-tooltip .tooltip-val { color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
