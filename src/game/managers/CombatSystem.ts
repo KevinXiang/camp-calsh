@@ -27,6 +27,8 @@ export class CombatSystem {
       } else if (opts.weaponKind === 'bomb') {
         // 炸弹 AOE 命中普通单位：独立 bombHit（仅触发闪白，无独立特效）
         gs.events.push({ kind: 'bombHit', x: target.x, y: target.y, faction: target.faction });
+      } else if (opts.source === 'ranged' && opts.weaponKind === 'arrow') {
+        gs.events.push({ kind: 'arrowHit', x: target.x, y: target.y, faction: target.faction });
       } else {
         const isJavelin = opts.source === 'ranged' && opts.weaponKind === 'javelin';
         gs.events.push(isJavelin

@@ -2,6 +2,7 @@ import type { Faction } from '../types';
 
 export type CombatEvent =
   | { kind: 'meleeHit'; x: number; y: number; faction: Faction }
+  | { kind: 'arrowHit'; x: number; y: number; faction: Faction }
   | { kind: 'javelinHit'; x: number; y: number; faction: Faction }
   | { kind: 'shieldBlock'; x: number; y: number; faction: Faction }
   | { kind: 'bombHit'; x: number; y: number; faction: Faction }
