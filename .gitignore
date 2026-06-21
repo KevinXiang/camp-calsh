@@ -4,6 +4,7 @@ dist
 .DS_Store
 
 .superpowers/
+.worktrees/
 
 # TypeScript 编译产物（Vite 接管编译；tsc 仅类型检查，noEmit 已开，此处兜底）
 *.tsbuildinfo
