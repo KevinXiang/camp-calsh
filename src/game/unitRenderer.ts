@@ -341,15 +341,46 @@ function playBashAnim(body: Phaser.GameObjects.Container): void {
   });
 }
 
-/** 弓兵射箭：body 短促后缩（模拟拉弦回收） */
+/** 弓兵射箭：蓄势 150ms（后仰）→ 出手 150ms（前甩 + 出手爆闪）→ 回正 150ms */
 function playBowAnim(body: Phaser.GameObjects.Container): void {
+  // 段 1：蓄势（后仰 ≈14°、轻微下压）
   body.scene.tweens.add({
     targets: body,
-    x: { from: 0, to: -3 },
+    rotation: 0.25,
+    y: -2,
+    duration: 150,
+    ease: 'Cubic.easeOut',
+  });
+  // 段 2：出手（快速前甩到 ≈-9°），同步触发出手爆闪
+  body.scene.tweens.add({
+    targets: body,
+    rotation: -0.15,
     y: 0,
-    duration: 100,
-    yoyo: true,
-    ease: 'Quad.easeOut',
+    duration: 150,
+    ease: 'Cubic.easeIn',
+    delay: 150,
+    onStart: () => {
+      // 出手爆闪：黄色光点叠层，150ms 淡出（不作为独立 CombatEvent，不占 EffectBudget）
+      const flash = body.scene.add.graphics();
+      flash.fillStyle(0xfff176, 0.6);
+      flash.fillCircle(0, -10, 8);
+      body.add(flash);
+      body.scene.tweens.add({
+        targets: flash,
+        alpha: { from: 0.6, to: 0 },
+        duration: 150,
+        onComplete: () => flash.destroy(),
+      });
+    },
+  });
+  // 段 3：归零
+  body.scene.tweens.add({
+    targets: body,
+    rotation: 0,
+    y: 0,
+    duration: 150,
+    ease: 'Sine.easeOut',
+    delay: 300,
   });
 }
 
