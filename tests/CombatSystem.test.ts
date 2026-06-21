@@ -1,25 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { CombatSystem, type CombatGSView } from '../src/game/managers/CombatSystem';
-import type { Camp, Unit, Projectile } from '../src/game/types';
-
-function mkCamp(o: Partial<Camp> = {}): Camp {
-  return { id: 'c1', faction: 'red', kind: 'sword', x: 0, y: 0, hp: 500, maxHp: 500,
-    spawnTimer: 0, upgrades: { production: 1, health: 1, weapon: 1 }, aliveUnits: 1, destroyed: false, ...o };
-}
-function mkUnit(o: Partial<Unit> = {}): Unit {
-  return { id: 'u1', faction: 'red', kind: 'sword', campId: 'c1', x: 0, y: 0, hp: 100, maxHp: 100,
-    attack: 10, attackRange: 35, attackInterval: 1.0, moveSpeed: 60,
-    attackTimer: 0, targetId: null, state: 'moving', alive: true, deathTimer: 0.3,
-    poisonTimer: 0, poisonDps: 0, poisonCooldownTimer: 0, ...o };
-}
-function mkGS(overrides: Partial<CombatGSView> = {}): CombatGSView {
-  return {
-    units: new Map(), camps: new Map(), projectiles: [], events: [],
-    stats: { red: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 },
-             blue: { unitsAlive: 0, campsAlive: 0, kills: 0, campsDestroyed: 0 } },
-    ...overrides,
-  };
-}
+import { CombatSystem } from '../src/game/managers/CombatSystem';
+import type { Projectile } from '../src/game/types';
+import { mkCamp, mkUnit, mkGS } from './test-helpers';
 
 describe('CombatSystem', () => {
   it('小兵 hp≤0 则 alive=false, kills++', () => {

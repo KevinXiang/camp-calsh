@@ -14,8 +14,7 @@ function emptyGS(): CombatGSView {
 function mkUnit(id: string, faction: 'red' | 'blue', kind: Unit['kind'], x: number, y: number, hp = 100): Unit {
   return { id, faction, kind, campId: 'c', x, y, hp, maxHp: hp,
     attack: 10, attackRange: 35, attackInterval: 1.0, moveSpeed: 60,
-    attackTimer: 0, targetId: null, state: 'idle' as const, alive: true, deathTimer: 0,
-    poisonTimer: 0, poisonDps: 0, poisonCooldownTimer: 0 };
+    attackTimer: 0, targetId: null, state: 'idle' as const, alive: true, deathTimer: 0 };
 }
 
 function cloneGS(gs: CombatGSView): CombatGSView {
@@ -30,12 +29,11 @@ function cloneGS(gs: CombatGSView): CombatGSView {
 }
 
 describe('CombatSystem damage resolution invariants', () => {
-  it('毒伤击杀单位正确增加 kills', () => {
+  it('applyDamage 击杀单位正确增加 kills', () => {
     const gs = emptyGS();
     const u = mkUnit('u1', 'blue', 'sword', 0, 0, 20);
     gs.units.set(u.id, u);
-    u.poisonTimer = 2; u.poisonDps = 15;
-    CombatSystem.tickPoison(u, 2, gs);
+    CombatSystem.applyDamage(u, 25, gs, { source: 'melee' });
     expect(u.alive).toBe(false);
     expect(gs.stats.red.kills).toBe(1);
     expect(gs.events.some(e => e.kind === 'unitDeath' && e.unitId === 'u1')).toBe(true);

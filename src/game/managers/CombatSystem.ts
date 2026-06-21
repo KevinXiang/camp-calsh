@@ -14,8 +14,6 @@ export interface DamageOpts {
   source: 'melee' | 'ranged';
   /** 仅 source==='ranged' 时有意义；用于命中特效分发。 */
   weaponKind?: 'arrow' | 'javelin' | 'bomb' | 'artillery';
-  /** 命中事件种类，'none' 表示不派发命中事件（例如持续毒伤）。 */
-  hitEvent?: HitEventKind | 'none';
 }
 
 type HitEventKind = 'meleeHit' | 'arrowHit' | 'javelinHit' | 'shieldBlock' | 'bombHit';
@@ -23,7 +21,6 @@ type HitEventKind = 'meleeHit' | 'arrowHit' | 'javelinHit' | 'shieldBlock' | 'bo
 export class CombatSystem {
   /**
    * 公共入口：对单位或营地造成伤害，并根据 opts 派发命中事件。
-   * 保留原签名语义，方便调用方；内部委托给 damageUnit / damageCamp。
    */
   static applyDamage(target: Unit | Camp, dmg: number, gs: CombatGSView, opts: DamageOpts): void {
     if ('alive' in target) {
@@ -43,11 +40,9 @@ export class CombatSystem {
   }
 
   /** 统一单位伤害结算：扣血 → 可选命中事件 → 死亡处理 */
-  private static damageUnit(target: Unit, dmg: number, gs: CombatGSView, hitKind: HitEventKind | 'none'): void {
+  private static damageUnit(target: Unit, dmg: number, gs: CombatGSView, hitKind: HitEventKind): void {
     target.hp -= dmg;
-    if (hitKind !== 'none') {
-      gs.events.push({ kind: hitKind, unitId: target.id, x: target.x, y: target.y, faction: target.faction } as CombatEvent);
-    }
+    gs.events.push({ kind: hitKind, unitId: target.id, x: target.x, y: target.y, faction: target.faction } as CombatEvent);
     if (target.hp <= 0 && target.alive) {
       target.alive = false;
       target.state = 'idle';
@@ -77,7 +72,7 @@ export class CombatSystem {
   /**
    * 炸弹爆炸：在 (x,y) radius 圆内对所有 alive 敌方 unit + 未摧毁敌方 camp 各扣 dmg。
    * 盾兵仍走 shieldBlock（身份压过武器）；普通 unit 走 bombHit。
-   * 每次调用推一个 bombExplosion 事件（用于爆炸特效，与命中数无关）。
+   * 每次调用推一个 bombExplosion 事件。
    */
   static applyAOE(
     x: number, y: number, dmg: number,
@@ -134,27 +129,8 @@ export class CombatSystem {
     gs.events.push({ kind: 'healHit', x: target.x, y: target.y, faction: target.faction });
   }
 
-  /** 施加中毒状态 */
-  static applyPoison(target: Unit, dps: number, duration: number, gs: CombatGSView): void {
-    target.poisonTimer = duration;
-    target.poisonDps = dps;
-    gs.events.push({ kind: 'poisonApplied', x: target.x, y: target.y, faction: target.faction });
-  }
-
-  /** 毒素 tick：每帧调用，扣除中毒伤害（不派发命中事件） */
-  static tickPoison(target: Unit, dt: number, gs: CombatGSView): void {
-    if (target.poisonTimer <= 0) return;
-    const effectiveDt = Math.min(dt, target.poisonTimer);
-    const tickDamage = target.poisonDps * effectiveDt;
-    target.poisonTimer = Math.max(0, target.poisonTimer - dt);
-    if (target.poisonTimer <= 0) {
-      target.poisonDps = 0;
-    }
-    CombatSystem.damageUnit(target, tickDamage, gs, 'none');
-  }
-
   static step(gs: CombatGSView, dt: number): void {
-    // 在结算前为单位构建空间索引（本 step 内复用，给 AOE/毒雾/火炮使用）
+    // 在结算前为单位构建空间索引（本 step 内复用，给 AOE/火炮使用）
     const aliveUnits: Unit[] = [];
     for (const u of gs.units.values()) {
       if (u.alive) aliveUnits.push(u);
@@ -176,9 +152,11 @@ export class CombatSystem {
 
       const target = gs.units.get(p.targetId) ?? gs.camps.get(p.targetId);
       if (!target) {
-        // 炸弹：目标已死 → 原地爆炸（不消失）
+        // 炸弹/火炮：目标已死 → 原地爆炸（不消失）
         if (p.kind === 'bomb') {
           CombatSystem.applyAOE(p.x, p.y, p.damage, p.faction, gs, 50, getGrid());
+        } else if (p.kind === 'artillery') {
+          CombatSystem.applyArtillerySplash(p.x, p.y, p.damage, p.faction, gs, 80, 2, getGrid());
         }
         continue;
       }
@@ -194,24 +172,6 @@ export class CombatSystem {
         }
         if (p.kind === 'artillery') {
           CombatSystem.applyArtillerySplash(p.x, p.y, p.damage, p.faction, gs, 80, 2, getGrid());
-          continue;
-        }
-        if (p.kind === 'poison') {
-          // 毒瓶命中：对范围内敌方施加中毒（单位走空间网格，营地仍全量）
-          const poisonRange = 300; // 与 medic.poisonRange 一致
-          const grid = getGrid();
-          for (const e of grid.queryCircle(p.x, p.y, poisonRange)) {
-            if (!e.alive || e.faction === p.faction) continue;
-            CombatSystem.applyPoison(e, p.damage, 2, gs);
-          }
-          for (const c of gs.camps.values()) {
-            if (c.destroyed || c.faction === p.faction) continue;
-            const d = Math.hypot(c.x - p.x, c.y - p.y);
-            if (d <= poisonRange) {
-              CombatSystem.damageCamp(c, p.damage * 2, gs, false);
-            }
-          }
-          gs.events.push({ kind: 'poisonCloud', x: p.x, y: p.y, faction: p.faction });
           continue;
         }
         if (p.kind === 'bomb') {

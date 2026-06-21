@@ -30,6 +30,8 @@ export interface Camp {
   destroyed: boolean;
 }
 
+export type TargetPreference = 'nearest' | 'highestHp' | 'clustered' | 'campFirst';
+
 export interface UnitDef {
   kind: UnitKind;
   attackType: AttackType;
@@ -42,14 +44,10 @@ export interface UnitDef {
   healAmount?: number;
   /** 医疗兵搜索受伤队友的范围（独立于 attackRange） */
   healSearchRange?: number;
-  /** 毒伤（每秒伤害，> 0 表示有毒攻击） */
-  poisonDamage?: number;
-  /** 中毒持续秒数 */
-  poisonDuration?: number;
-  /** 毒雾范围（px） */
-  poisonRange?: number;
-  /** 毒雾冷却秒数 */
-  poisonCooldown?: number;
+  /** 目标选择偏好；缺省为 'nearest' */
+  preferredTarget?: TargetPreference;
+  /** 最小攻击距离；目标进入该距离内将不进入攻击分支（用于火炮近身弱点） */
+  minimumAttackRange?: number;
 }
 
 export interface Unit {
@@ -70,15 +68,9 @@ export interface Unit {
   state: 'moving' | 'attacking' | 'idle';
   alive: boolean;
   deathTimer: number;
-  /** 中毒剩余时间（秒），> 0 表示中毒中 */
-  poisonTimer: number;
-  /** 中毒每秒伤害 */
-  poisonDps: number;
-  /** 毒雾冷却剩余秒数 */
-  poisonCooldownTimer: number;
 }
 
-export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery' | 'poison';
+export type ProjectileKind = 'arrow' | 'javelin' | 'bomb' | 'heal' | 'artillery';
 
 export interface Projectile {
   id: string;
@@ -98,4 +90,24 @@ export interface SideStats {
   campsAlive: number;
   kills: number;
   campsDestroyed: number;
+}
+
+/**
+ * 军营角色元数据，仅供 UI/设计表达使用，不进入战斗模拟。
+ */
+export interface CampRoleDef {
+  /** 一句话定位 */
+  slogan: string;
+  /** 战场角色类别 */
+  role: 'frontline' | 'tank' | 'sustain-ranged' | 'assassin-ranged' | 'aoe-ranged' | 'support' | 'siege';
+  /** 主要优势 */
+  strengths: string[];
+  /** 主要短板 */
+  weaknesses: string[];
+  /** 擅长对付的军营 */
+  bestAgainst: CampKind[];
+  /** 被哪些军营克制 */
+  weakAgainst: CampKind[];
+  /** 学习层级：1 基础 / 2 战术 / 3 特殊 */
+  tier: 1 | 2 | 3;
 }

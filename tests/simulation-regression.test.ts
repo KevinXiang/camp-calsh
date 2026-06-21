@@ -26,7 +26,6 @@ function placeUnit(id: string, faction: 'red' | 'blue', kind: Unit['kind'], camp
     attack: def.attack, attackRange: def.attackRange, attackInterval: def.attackInterval, moveSpeed: def.moveSpeed,
     attackTimer: 0, targetId: null, state: 'idle' as const,
     alive: true, deathTimer: 0,
-    poisonTimer: 0, poisonDps: 0, poisonCooldownTimer: 0,
   };
 }
 
@@ -113,7 +112,6 @@ describe('long-step simulation regression', () => {
     const steps = Math.round(20 / dt);
 
     let explosions = 0;
-    let poisons = 0;
     let heals = 0;
     let campDamaged = false;
     for (let i = 0; i < steps; i++) {
@@ -123,7 +121,6 @@ describe('long-step simulation regression', () => {
       gs.sim.timeMs += dt * 1000;
       for (const ev of gs.events) {
         if (ev.kind === 'bombExplosion' || ev.kind === 'artilleryExplosion') explosions++;
-        if (ev.kind === 'poisonCloud' || ev.kind === 'poisonApplied') poisons++;
         if (ev.kind === 'healHit') heals++;
         if (ev.kind === 'campHit' || ev.kind === 'campDestroyed') campDamaged = true;
         // 受击事件必须带 unitId
@@ -138,7 +135,7 @@ describe('long-step simulation regression', () => {
 
     // 混合兵种下应该有爆炸事件（炸弹/火炮至少开过火）
     expect(explosions).toBeGreaterThan(0);
-    // 至少出现过治疗/毒/营命中（不强求全部都有，避免过于脆弱）
+    // 至少出现过治疗/营命中（不强求全部都有，避免过于脆弱）
     // 不抛错、单位数量保持在合理范围
     expect(gs.units.size).toBeLessThan(200);
   });

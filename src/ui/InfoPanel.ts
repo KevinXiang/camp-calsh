@@ -2,7 +2,13 @@ import type { UiBridge } from './UiBridge';
 import type { BattleScene } from '../game/BattleScene';
 
 const KIND_LABEL: Record<string, string> = {
-  sword: '剑兵营', shield: '盾兵营', archer: '弓兵营', javelin: '投矛营',
+  sword: '剑兵营',
+  shield: '盾兵营',
+  archer: '弓兵营',
+  javelin: '投矛营',
+  bomb: '爆破营',
+  medic: '医疗营',
+  artillery: '火炮营',
 };
 
 export class InfoPanel {
@@ -30,7 +36,7 @@ export class InfoPanel {
     this.body.parentElement!.style.display = '';
     const factionLabel = camp.faction === 'red' ? '红方' : '蓝方';
     this.body.innerHTML =
-      '<div><b>' + factionLabel + ' ' + KIND_LABEL[camp.kind] + '</b></div>' +
+      '<div><b>' + factionLabel + ' ' + (KIND_LABEL[camp.kind] ?? camp.kind) + '</b></div>' +
       '<div>生命值：' + camp.hp + ' / ' + camp.maxHp + '</div>' +
       '<div>位置：(' + Math.round(camp.x) + ', ' + Math.round(camp.y) + ')</div>';
   }

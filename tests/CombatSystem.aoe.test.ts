@@ -10,7 +10,7 @@ function mkUnit(o: Partial<Unit> = {}): Unit {
   return { id: 'u1', faction: 'blue', kind: 'sword', campId: 'c1', x: 0, y: 0, hp: 100, maxHp: 100,
     attack: 10, attackRange: 35, attackInterval: 1.0, moveSpeed: 60,
     attackTimer: 0, targetId: null, state: 'moving', alive: true, deathTimer: 0,
-    poisonTimer: 0, poisonDps: 0, poisonCooldownTimer: 0, ...o };
+    ...o };
 }
 function mkGS(overrides: Partial<CombatGSView> = {}): CombatGSView {
   return {
