@@ -87,7 +87,6 @@ export class PlacementController {
   }
 
   private placeCamp(x: number, y: number, faction: Faction, kind: CampKind): void {
-    const gs = this.scene.exposeGameState();
     // 门控临时关闭（与 src/ui/BuildPanel.ts KINDS 的 gated:false 同步）——投矛/爆破可自由放置。
     // 恢复解锁门控时：取消下行注释，并把 BuildPanel 的 javelin/bomb gated 改回 true。
     // // 兜底：gated 兵种 + 锁定 → 拒绝
@@ -104,14 +103,7 @@ export class PlacementController {
       return;
     }
 
-    // 红蓝双方都有军营 → 自动开始战斗
-    if (!gs.sim.running && this.bridge.getGameOver() === null) {
-      const all = gs.allCamps();
-      if (all.some(c => c.faction === 'red') && all.some(c => c.faction === 'blue')) {
-        this.bridge.setRunning(true, gs);
-      }
-    }
-
+    this.scene.onCampPlaced?.(result.camp);
     this.scene.refreshViews();
     this.preview.setVisible(false);
     this.bridge.selectCampKind(null);

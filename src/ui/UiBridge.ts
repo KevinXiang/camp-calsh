@@ -1,13 +1,71 @@
-import type { Faction, CampKind } from '../game/types';
+import type { Faction, CampKind, GameMode } from '../game/types';
 import type { GameState } from '../game/GameState';
 import type { PlacementFailure } from '../game/managers/CampPlacementService';
+import { EconomySystem } from '../game/managers/EconomySystem';
 
 export interface PlacementSelection {
   faction: Faction;
   kind: CampKind | null;
 }
 
-type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged' | 'gameOver' | 'hoverChanged';
+type EventName =
+  | 'placementChanged'
+  | 'selectionChanged'
+  | 'simChanged'
+  | 'statsChanged'
+  | 'gameOver'
+  | 'hoverChanged'
+  | 'modeChanged'
+  | 'economyChanged'
+  | 'noticeChanged';
+
+export const AI_STARTUP_FAILURE_NOTICE =
+  '蓝方建造区没有合法位置，AI 对战暂未开始';
+
+export function setGameMode(gs: GameState, mode: GameMode): void {
+  if (mode === 'aiBattle') {
+    EconomySystem.enterAiBattle(gs);
+    return;
+  }
+  gs.mode = 'sandbox';
+}
+
+export function hasLivingCamp(gs: GameState, faction: Faction): boolean {
+  return gs.allCamps().some(
+    camp => camp.faction === faction && !camp.destroyed,
+  );
+}
+
+export function economySignature(gs: GameState): string {
+  return `${Math.floor(gs.economy.resources.red)}|${Math.floor(gs.economy.resources.blue)}`;
+}
+
+export interface AiBattleStartupResult {
+  attempted: boolean;
+  started: boolean;
+  notice: string | null;
+}
+
+export function prepareAiBattleStartup(
+  gs: GameState,
+  deployInitialCamp: () => boolean,
+): AiBattleStartupResult {
+  if (
+    gs.mode !== 'aiBattle'
+    || !hasLivingCamp(gs, 'red')
+    || hasLivingCamp(gs, 'blue')
+  ) {
+    return { attempted: false, started: false, notice: null };
+  }
+
+  const started = deployInitialCamp();
+  gs.sim.running = started;
+  return {
+    attempted: true,
+    started,
+    notice: started ? null : AI_STARTUP_FAILURE_NOTICE,
+  };
+}
 
 export class UiBridge {
   private listeners: Record<EventName, Set<() => void>> = {
@@ -17,12 +75,17 @@ export class UiBridge {
     statsChanged: new Set(),
     gameOver: new Set(),
     hoverChanged: new Set(),
+    modeChanged: new Set(),
+    economyChanged: new Set(),
+    noticeChanged: new Set(),
   };
   private selection: PlacementSelection = { faction: 'red', kind: null };
   private selectedCampId: string | null = null;
   private gameOverFaction: Faction | null = null;
   private hoveredKind: CampKind | null = null;
   private lastPlacementFailure: PlacementFailure | null = null;
+  private notice: string | null = null;
+  private modeInitialized = false;
 
   getSelection(): PlacementSelection {
     return this.selection;
@@ -70,13 +133,44 @@ export class UiBridge {
     this.emit('selectionChanged');
   }
 
-  deleteSelected(scene: { exposeGameState(): GameState; refreshViews(): void }): void {
-    if (this.selectedCampId) {
-      scene.exposeGameState().removeCamp(this.selectedCampId);
-      scene.refreshViews();
-      this.selectedCampId = null;
-      this.emit('selectionChanged');
+  deleteSelected(scene: { removeCampByPlayer(id: string): boolean }): void {
+    if (!this.selectedCampId) return;
+    if (!scene.removeCampByPlayer(this.selectedCampId)) return;
+    this.selectedCampId = null;
+    this.emit('selectionChanged');
+    this.emit('economyChanged');
+  }
+
+  setMode(mode: GameMode, gs: GameState): void {
+    if (this.modeInitialized && gs.mode === mode) return;
+    this.modeInitialized = true;
+    setGameMode(gs, mode);
+
+    if (mode === 'aiBattle' && this.selection.faction === 'blue') {
+      this.selection = { faction: 'red', kind: null };
+      this.emit('placementChanged');
     }
+    if (mode === 'aiBattle' && this.selectedCampId) {
+      const selected = gs.getCamp(this.selectedCampId);
+      if (selected?.faction === 'blue') {
+        this.selectedCampId = null;
+        this.emit('selectionChanged');
+      }
+    }
+
+    this.emit('modeChanged');
+    this.emit('economyChanged');
+    this.emit('simChanged');
+  }
+
+  setNotice(notice: string | null): void {
+    if (this.notice === notice) return;
+    this.notice = notice;
+    this.emit('noticeChanged');
+  }
+
+  getNotice(): string | null {
+    return this.notice;
   }
 
   setRunning(b: boolean, gs: GameState): void {

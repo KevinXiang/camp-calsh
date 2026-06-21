@@ -9,11 +9,20 @@ import { SelectionInput } from './managers/SelectionInput';
 import { CampManager } from './managers/CampManager';
 import { UnitManager } from './managers/UnitManager';
 import { CombatSystem } from './managers/CombatSystem';
+import { CampPlacementService } from './managers/CampPlacementService';
+import { EconomySystem } from './managers/EconomySystem';
+import { AiController } from './ai/AiController';
 import { drawProjectile, updateProjectileView } from './projectileRenderer';
 import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
 import { classifyZoom, shouldDispatchEvent, shouldShowUnitHpBar, type ZoomTier } from './lodPolicy';
-import type { UiBridge } from '../ui/UiBridge';
+import {
+  economySignature,
+  hasLivingCamp,
+  prepareAiBattleStartup,
+  type UiBridge,
+} from '../ui/UiBridge';
+import type { Camp } from './types';
 
 export class BattleScene extends Phaser.Scene {
   private ground!: Phaser.GameObjects.TileSprite;
@@ -35,7 +44,10 @@ export class BattleScene extends Phaser.Scene {
   private unitManager!: UnitManager;
   private effects!: EffectManager;
   private bridge!: UiBridge;
+  private placementService!: CampPlacementService;
+  private aiController!: AiController;
   private lastStatsSig = '';
+  private lastEconomySig = '';
 
   constructor() { super('BattleScene'); }
 
@@ -61,9 +73,16 @@ export class BattleScene extends Phaser.Scene {
     this.selectionRing = this.add.circle(0, 0, 40)
       .setStrokeStyle(3, SELECTION_COLOR)
       .setVisible(false);
-    this.placement = new PlacementController(this, this.bridge);
+    this.placementService = new CampPlacementService(this.gameState);
+    this.aiController = new AiController(this.gameState, this.placementService);
+    this.placement = new PlacementController(
+      this,
+      this.bridge,
+      this.placementService,
+    );
     this.selectionInput = new SelectionInput(this, this.bridge);
     this.bridge.on('selectionChanged', () => this.updateSelectionRing());
+    this.bridge.on('modeChanged', () => this.handleModeChanged());
     this.updateSelectionRing();
 
     this.campManager = new CampManager(this.gameState);
@@ -117,6 +136,9 @@ export class BattleScene extends Phaser.Scene {
     const steps = this.clock.consume(deltaMs, this.gameState.sim.running, this.gameState.sim.speed);
     const dt = this.clock.fixedDt();
     for (let i = 0; i < steps; i++) {
+      const gameOver = this.bridge.getGameOver() !== null;
+      EconomySystem.step(this.gameState, dt, gameOver);
+      this.aiController.step(dt, gameOver);
       this.campManager.step(dt);
       this.unitManager.step(dt);
       CombatSystem.step(this.gameState, dt);
@@ -150,6 +172,7 @@ export class BattleScene extends Phaser.Scene {
     this.syncUnitViews();
     this.syncProjectileViews();
     this.maybeEmitStatsChanged();
+    this.maybeEmitEconomyChanged();
   }
 
   /** 仅在统计快照变化时触发 statsChanged，降低 UI 刷新频率 */
@@ -169,6 +192,18 @@ export class BattleScene extends Phaser.Scene {
       this.lastStatsSig = sig;
       this.bridge.emit('statsChanged');
     }
+  }
+
+  private maybeEmitEconomyChanged(): void {
+    const sig = economySignature(this.gameState);
+    if (sig === this.lastEconomySig) return;
+    this.lastEconomySig = sig;
+    this.bridge.emit('economyChanged');
+  }
+
+  private emitEconomyChangedNow(): void {
+    this.lastEconomySig = economySignature(this.gameState);
+    this.bridge.emit('economyChanged');
   }
 
   private syncCampViews(): void {
@@ -241,6 +276,71 @@ export class BattleScene extends Phaser.Scene {
 
   exposeGameState(): GameState { return this.gameState; }
   refreshViews(): void { this.syncCampViews(); }
+
+  onCampPlaced(camp: Camp): void {
+    if (this.bridge.getGameOver() !== null) return;
+
+    const startup = camp.faction === 'red'
+      ? prepareAiBattleStartup(
+        this.gameState,
+        () => this.aiController.deployInitialCamp(),
+      )
+      : { attempted: false, started: false, notice: null };
+    if (startup.attempted) {
+      this.bridge.setNotice(startup.notice);
+      this.emitEconomyChangedNow();
+      this.bridge.emit('simChanged');
+      return;
+    }
+
+    if (this.gameState.mode === 'aiBattle') {
+      this.emitEconomyChangedNow();
+    }
+
+    if (
+      !this.gameState.sim.running
+      && hasLivingCamp(this.gameState, 'red')
+      && hasLivingCamp(this.gameState, 'blue')
+    ) {
+      this.bridge.setRunning(true, this.gameState);
+    }
+  }
+
+  removeCampByPlayer(id: string): boolean {
+    if (!this.placementService.remove('player', id)) return false;
+    this.lastEconomySig = economySignature(this.gameState);
+    this.refreshViews();
+    return true;
+  }
+
+  private handleModeChanged(): void {
+    this.lastEconomySig = economySignature(this.gameState);
+    if (this.gameState.mode === 'sandbox') {
+      this.bridge.setNotice(null);
+      return;
+    }
+
+    const startup = prepareAiBattleStartup(
+      this.gameState,
+      () => this.aiController.deployInitialCamp(),
+    );
+    if (startup.attempted) {
+      this.bridge.setNotice(startup.notice);
+      if (startup.started) this.emitEconomyChangedNow();
+      this.bridge.emit('simChanged');
+      this.refreshViews();
+      return;
+    }
+
+    if (
+      this.bridge.getGameOver() === null
+      && !this.gameState.sim.running
+      && hasLivingCamp(this.gameState, 'red')
+      && hasLivingCamp(this.gameState, 'blue')
+    ) {
+      this.bridge.setRunning(true, this.gameState);
+    }
+  }
 
   private updateSelectionRing(): void {
     const id = this.bridge.getSelectedCampId();
