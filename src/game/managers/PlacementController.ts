@@ -1,20 +1,23 @@
 import Phaser from 'phaser';
 import type { BattleScene } from '../BattleScene';
-import { canPlaceCamp } from '../placement';
-import { CAMP_DEFS, CAMP_MIN_DISTANCE } from '../../config/camps';
 import { PREVIEW_OK_COLOR, PREVIEW_BAD_COLOR } from '../../config/colors';
-import type { Camp, CampKind, Faction } from '../types';
+import type { CampKind, Faction } from '../types';
 import type { UiBridge } from '../../ui/UiBridge';
+import { CampPlacementService } from './CampPlacementService';
 
 export class PlacementController {
   private preview: Phaser.GameObjects.Arc;
+  private placementService: CampPlacementService;
   private faction: Faction = 'red';
   private kind: CampKind | null = null;
 
   constructor(
     private scene: BattleScene,
     private bridge: UiBridge,
+    placementService?: CampPlacementService,
   ) {
+    this.placementService =
+      placementService ?? new CampPlacementService(scene.exposeGameState());
     this.preview = scene.add.circle(0, 0, 32, PREVIEW_OK_COLOR, 0.4)
       .setStrokeStyle(2, PREVIEW_OK_COLOR)
       .setVisible(false);
@@ -57,8 +60,6 @@ export class PlacementController {
   private onDown(p: Phaser.Input.Pointer): void {
     if (!p.leftButtonDown() || this.kind === null) return;
     const wp = this.scene.cameras.main.getWorldPoint(p.x, p.y);
-    const gs = this.scene.exposeGameState();
-    if (!canPlaceCamp(gs.allCamps(), wp.x, wp.y, CAMP_MIN_DISTANCE)) return;
     this.placeCamp(wp.x, wp.y, this.faction, this.kind);
   }
 
@@ -68,8 +69,13 @@ export class PlacementController {
       return;
     }
     const wp = this.scene.cameras.main.getWorldPoint(p.x, p.y);
-    const gs = this.scene.exposeGameState();
-    const ok = canPlaceCamp(gs.allCamps(), wp.x, wp.y, CAMP_MIN_DISTANCE);
+    const ok = this.placementService.validate({
+      actor: 'player',
+      faction: this.faction,
+      kind: this.kind,
+      x: wp.x,
+      y: wp.y,
+    }) === null;
     this.preview.setPosition(wp.x, wp.y);
     this.preview.setFillStyle(ok ? PREVIEW_OK_COLOR : PREVIEW_BAD_COLOR, 0.4);
     this.preview.setStrokeStyle(2, ok ? PREVIEW_OK_COLOR : PREVIEW_BAD_COLOR);
@@ -86,23 +92,17 @@ export class PlacementController {
     // 恢复解锁门控时：取消下行注释，并把 BuildPanel 的 javelin/bomb gated 改回 true。
     // // 兜底：gated 兵种 + 锁定 → 拒绝
     // if ((kind === 'javelin' || kind === 'bomb') && gs.sim.unlockTimer <= 0) return;
-    if (!canPlaceCamp(gs.allCamps(), x, y, CAMP_MIN_DISTANCE)) return;
-
-    const def = CAMP_DEFS[kind];
-    const camp: Camp = {
-      id: crypto.randomUUID(),
+    const result = this.placementService.place({
+      actor: 'player',
       faction,
       kind,
       x,
       y,
-      hp: def.maxHp,
-      maxHp: def.maxHp,
-      spawnTimer: 0,
-      upgrades: { production: 1, health: 1, weapon: 1 },
-      aliveUnits: 0,
-      destroyed: false,
-    };
-    gs.addCamp(camp);
+    });
+    if (!result.ok) {
+      this.bridge.reportPlacementFailure(result.reason);
+      return;
+    }
 
     // 红蓝双方都有军营 → 自动开始战斗
     if (!gs.sim.running && this.bridge.getGameOver() === null) {

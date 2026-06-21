@@ -1,5 +1,6 @@
 import type { Faction, CampKind } from '../game/types';
 import type { GameState } from '../game/GameState';
+import type { PlacementFailure } from '../game/managers/CampPlacementService';
 
 export interface PlacementSelection {
   faction: Faction;
@@ -21,6 +22,7 @@ export class UiBridge {
   private selectedCampId: string | null = null;
   private gameOverFaction: Faction | null = null;
   private hoveredKind: CampKind | null = null;
+  private lastPlacementFailure: PlacementFailure | null = null;
 
   getSelection(): PlacementSelection {
     return this.selection;
@@ -34,6 +36,19 @@ export class UiBridge {
   selectCampKind(k: CampKind | null): void {
     this.selection.kind = k;
     this.emit('placementChanged');
+  }
+
+  reportPlacementFailure(reason: PlacementFailure): void {
+    this.lastPlacementFailure = reason;
+    this.emit('placementChanged');
+  }
+
+  getPlacementFailure(): PlacementFailure | null {
+    return this.lastPlacementFailure;
+  }
+
+  clearPlacementFailure(): void {
+    this.lastPlacementFailure = null;
   }
 
   getSelectedCampId(): string | null {
