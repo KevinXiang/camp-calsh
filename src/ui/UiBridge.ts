@@ -69,7 +69,7 @@ export class UiBridge {
     this.emit('simChanged');
   }
 
-  setSpeed(s: 1 | 2 | 4 | 8 | 10, gs: GameState): void {
+  setSpeed(s: 1 | 2 | 3 | 4 | 5, gs: GameState): void {
     gs.sim.speed = s;
     this.emit('simChanged');
   }

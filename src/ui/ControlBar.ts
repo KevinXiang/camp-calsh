@@ -12,9 +12,9 @@ export class ControlBar {
       <button data-action="toggle-run" title="暂停/播放 (Space)">▶</button>
       <button data-action="speed-1" class="active">1x</button>
       <button data-action="speed-2">2x</button>
+      <button data-action="speed-3">3x</button>
       <button data-action="speed-4">4x</button>
-      <button data-action="speed-8">8x</button>
-      <button data-action="speed-10">10x</button>
+      <button data-action="speed-5">5x</button>
       <span class="control-sep"></span>
       <button data-action="reset" title="重置战场">重置</button>
     `;
@@ -31,9 +31,9 @@ export class ControlBar {
           break;
         case 'speed-1': this.bridge.setSpeed(1, gs); break;
         case 'speed-2': this.bridge.setSpeed(2, gs); break;
+        case 'speed-3': this.bridge.setSpeed(3, gs); break;
         case 'speed-4': this.bridge.setSpeed(4, gs); break;
-        case 'speed-8': this.bridge.setSpeed(8, gs); break;
-        case 'speed-10': this.bridge.setSpeed(10, gs); break;
+        case 'speed-5': this.bridge.setSpeed(5, gs); break;
         case 'reset': location.reload(); break;
       }
     });
@@ -47,7 +47,7 @@ export class ControlBar {
     const runBtn = this.root.querySelector('[data-action="toggle-run"]')!;
     runBtn.textContent = gs.sim.running ? '⏸' : '▶';
 
-    for (const s of [1, 2, 4, 8, 10] as const) {
+    for (const s of [1, 2, 3, 4, 5] as const) {
       const btn = this.root.querySelector(`[data-action="speed-${s}"]`)!;
       btn.classList.toggle('active', gs.sim.speed === s);
     }
