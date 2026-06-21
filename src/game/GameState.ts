@@ -1,5 +1,17 @@
-import type { Camp, Unit, Projectile, SideStats } from './types';
+import type { Camp, CampKind, GameMode, Unit, Projectile, SideStats } from './types';
 import type { CombatEvent } from './effects/types';
+
+export interface EconomyState {
+  initialized: boolean;
+  resources: { red: number; blue: number };
+}
+
+export interface AiState {
+  decisionCooldown: number;
+  targetKind: CampKind | null;
+  targetRedSignature: string;
+  failedPlacements: number;
+}
 
 export interface SimState {
   running: boolean;
@@ -15,6 +27,17 @@ export interface SimState {
 }
 
 export class GameState {
+  mode: GameMode = 'sandbox';
+  economy: EconomyState = {
+    initialized: false,
+    resources: { red: 0, blue: 0 },
+  };
+  ai: AiState = {
+    decisionCooldown: 0,
+    targetKind: null,
+    targetRedSignature: '',
+    failedPlacements: 0,
+  };
   readonly camps = new Map<string, Camp>();
   readonly units = new Map<string, Unit>();
   projectiles: Projectile[] = [];

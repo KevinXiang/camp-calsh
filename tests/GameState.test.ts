@@ -12,6 +12,26 @@ function makeCamp(id: string, x = 0, y = 0): Camp {
 }
 
 describe('GameState', () => {
+  it('defaults to sandbox with uninitialized persistent AI battle state', () => {
+    const gs = new GameState();
+    expect(gs.mode).toBe('sandbox');
+    expect(gs.economy).toEqual({
+      initialized: false,
+      resources: { red: 0, blue: 0 },
+    });
+    expect(gs.ai).toEqual({
+      decisionCooldown: 0,
+      targetKind: null,
+      targetRedSignature: '',
+      failedPlacements: 0,
+    });
+  });
+
+  it('treats legacy camps without paidCost as unpaid', () => {
+    const camp = makeCamp('legacy');
+    expect(camp.paidCost ?? 0).toBe(0);
+  });
+
   it('addCamp 后可通过 getCamp 取回', () => {
     const gs = new GameState();
     const c = makeCamp('c1');

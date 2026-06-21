@@ -1,5 +1,7 @@
 export type Faction = 'red' | 'blue';
 
+export type GameMode = 'sandbox' | 'aiBattle';
+
 export type CampKind = 'sword' | 'shield' | 'archer' | 'javelin' | 'bomb' | 'medic' | 'artillery';
 
 export type UnitKind = CampKind;
@@ -28,6 +30,7 @@ export interface Camp {
   upgrades: Record<UpgradeType, number>;
   aliveUnits: number;
   destroyed: boolean;
+  paidCost?: number;
 }
 
 export type TargetPreference = 'nearest' | 'highestHp' | 'clustered' | 'campFirst';
