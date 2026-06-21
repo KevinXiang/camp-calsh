@@ -5,14 +5,14 @@ import { MathQuizModal } from './MathQuizModal';
 import { CAMP_ROLE_DEFS, TIER_LABEL } from '../config/campRoles';
 
 const KINDS: { key: CampKind; label: string; icon: string; gated?: boolean }[] = [
-  { key: 'sword', label: '剑兵营', icon: '⚔️' },
-  { key: 'shield', label: '盾兵营', icon: '🛡️' },
-  { key: 'archer', label: '弓兵营', icon: '🏹' },
+  { key: 'sword', label: '剑兵', icon: '⚔️' },
+  { key: 'shield', label: '盾兵', icon: '🛡️' },
+  { key: 'archer', label: '弓兵', icon: '🏹' },
   // 临时关闭算术题解锁门控，投矛/爆破可自由使用；需恢复时改回 gated: true
-  { key: 'javelin', label: '投矛营', icon: '🔱', gated: false },
-  { key: 'bomb', label: '爆破营', icon: '💣', gated: false },
-  { key: 'medic', label: '医疗营', icon: '🏥' },
-  { key: 'artillery', label: '火炮营', icon: '💥' },
+  { key: 'javelin', label: '投矛', icon: '🔱', gated: false },
+  { key: 'bomb', label: '爆破', icon: '💣', gated: false },
+  { key: 'medic', label: '医疗', icon: '🏥' },
+  { key: 'artillery', label: '火炮', icon: '💥' },
 ];
 
 const HOTKEY_MAP: Record<string, CampKind> = { q: 'sword', w: 'shield', e: 'archer', r: 'javelin', t: 'bomb', y: 'medic', u: 'artillery' };
@@ -68,11 +68,8 @@ export class BuildPanel {
       b.className = `camp-btn tier-${role.tier}`;
       b.innerHTML =
         `<span class="icon">${k.icon}</span>` +
-        `<span class="camp-label">` +
-          `<span class="camp-name">${k.label}</span>` +
-          `<span class="camp-slogan">${role.slogan}</span>` +
-        `</span>` +
-        `<span class="camp-tier-tag">${TIER_LABEL[role.tier]}</span>`;
+        `<span class="camp-name">${k.label}</span>` +
+        `<span class="camp-tier-dot tier-${role.tier}" title="${TIER_LABEL[role.tier]}"></span>`;
       b.draggable = true;
 
       b.addEventListener('dragstart', async (e) => {

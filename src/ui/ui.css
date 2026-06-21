@@ -50,48 +50,52 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
    统一面板语言：build panel / info / tooltip / hud / control
    =================================================================== */
 #build-panel-left, #build-panel-right {
-  top: 60px;
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 8px; border-radius: 10px;
+  top: 52px;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 6px; border-radius: 8px;
+  width: 118px;
   color: var(--ui-text);
   border: 2px solid;
   background: var(--ui-panel-bg-strong);
   box-shadow: var(--ui-panel-shadow);
 }
-#build-panel-left { left: 12px; background: linear-gradient(180deg, var(--ui-red-soft), var(--ui-panel-bg-strong)); border-color: var(--ui-red-border); }
-#build-panel-right { right: 12px; background: linear-gradient(180deg, var(--ui-blue-soft), var(--ui-panel-bg-strong)); border-color: var(--ui-blue-border); }
-.build-panel-title { font-size: 13px; font-weight: bold; text-align: center; font-family: var(--ui-font-display); }
+#build-panel-left { left: 8px; background: linear-gradient(180deg, var(--ui-red-soft), var(--ui-panel-bg-strong)); border-color: var(--ui-red-border); }
+#build-panel-right { right: 8px; background: linear-gradient(180deg, var(--ui-blue-soft), var(--ui-panel-bg-strong)); border-color: var(--ui-blue-border); }
+.build-panel-title { font-size: 11px; font-weight: bold; text-align: center; font-family: var(--ui-font-display); padding: 2px 0 2px; }
 #build-panel-left .build-panel-title { color: #ff8a80; }
 #build-panel-right .build-panel-title { color: #82b1ff; }
 
-/* 卡片化按钮 + 层级（基础/战术/特殊）标识 */
+/* 紧凑按钮：图标 + 2 字简称 + tier 色点 */
 .camp-btn {
   display: flex; align-items: center; gap: 6px;
-  padding: 8px 10px;
-  border: 0; border-radius: 6px;
-  cursor: grab; font-size: 13px; color: var(--ui-text);
+  padding: 5px 8px;
+  border: 0; border-radius: 5px;
+  cursor: grab; font-size: 12px; color: var(--ui-text);
   background: var(--ui-btn-bg);
   transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 .camp-btn:hover { background: var(--ui-btn-bg-hover); transform: translateY(-1px); }
 .camp-btn:active { cursor: grabbing; background: var(--ui-btn-bg-pressed); transform: translateY(0); }
 .camp-btn.active {
-  outline: 3px solid var(--ui-gold);
+  outline: 2px solid var(--ui-gold);
   background: var(--ui-btn-bg-active);
-  box-shadow: 0 0 12px rgba(246, 211, 77, 0.4);
+  box-shadow: 0 0 10px rgba(246, 211, 77, 0.4);
 }
-.camp-btn .icon { font-size: 18px; width: 24px; text-align: center; }
-.camp-btn .camp-label { display: flex; flex-direction: column; line-height: 1.15; }
-.camp-btn .camp-label .camp-name { font-weight: bold; }
-.camp-btn .camp-label .camp-slogan { font-size: 10px; color: var(--ui-text-muted); }
-.camp-btn .camp-tier-tag {
-  margin-left: auto; padding: 1px 5px; border-radius: 8px;
-  font-size: 9px; font-weight: bold; letter-spacing: 0.5px;
-  background: rgba(0,0,0,0.4); color: var(--ui-text-muted);
+.camp-btn .icon { font-size: 16px; width: 20px; text-align: center; line-height: 1; flex-shrink: 0; }
+.camp-btn .camp-name { font-weight: bold; font-size: 12px; flex: 1; text-align: left; }
+/* tier 小圆点：基础灰 / 战术金 / 特殊紫 */
+.camp-btn .camp-tier-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
 }
-.camp-btn.tier-1 .camp-tier-tag { color: #cfd8dc; background: rgba(176,190,197,0.18); }
-.camp-btn.tier-2 .camp-tier-tag { color: var(--ui-gold); background: rgba(246,211,77,0.18); }
-.camp-btn.tier-3 .camp-tier-tag { color: #ce93d8; background: rgba(206,147,216,0.18); }
+.camp-btn .camp-tier-dot.tier-1 { background: #b0bec5; }
+.camp-btn .camp-tier-dot.tier-2 { background: var(--ui-gold); box-shadow: 0 0 6px rgba(246,211,77,0.6); }
+.camp-btn .camp-tier-dot.tier-3 { background: #ce93d8; box-shadow: 0 0 6px rgba(206,147,216,0.6); }
+
+/* 锁定按钮 */
+.camp-btn.locked { opacity: 0.55; position: relative; }
+.camp-btn.locked::after { content: '🔒'; position: absolute; top: 1px; right: 3px; font-size: 9px; }
 
 #info-panel {
   top: 270px; right: 12px; width: 220px;
@@ -146,7 +150,7 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 .control-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.15); margin: 0 4px; }
 
 @media (pointer: coarse) {
-  .camp-btn { padding: 12px 14px; font-size: 16px; }
+  .camp-btn { padding: 10px 10px; font-size: 14px; }
   #control-bar button { padding: 8px 14px; font-size: 15px; }
 }
 
@@ -197,42 +201,42 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 @keyframes victory-glow { 0% { filter: drop-shadow(0 0 6px rgba(255,255,255,0.4)); } 100% { filter: drop-shadow(0 0 20px rgba(255,255,255,0.9)); } }
 
 /* ===================================================================
-   产兵速度 slider
+   产兵速度 slider（紧凑版）
    =================================================================== */
 .spawn-slider {
-  margin-top: 10px; padding: 8px 10px;
-  background: rgba(0,0,0,0.28); border-radius: 6px;
-  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 4px; padding: 4px 6px;
+  background: rgba(0,0,0,0.28); border-radius: 5px;
+  display: flex; flex-direction: column; gap: 3px;
 }
 .spawn-slider-head {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; color: rgba(255,255,255,0.85);
+  font-size: 10px; color: rgba(255,255,255,0.85);
 }
-.spawn-slider-title { letter-spacing: 0.5px; }
+.spawn-slider-title { letter-spacing: 0.3px; }
 .spawn-slider-value {
-  font-weight: bold; font-size: 13px;
-  padding: 1px 8px; border-radius: 10px;
+  font-weight: bold; font-size: 10px;
+  padding: 1px 5px; border-radius: 8px;
   background: rgba(255,235,59,0.18); color: var(--ui-gold);
-  min-width: 36px; text-align: center;
+  min-width: 30px; text-align: center;
 }
 .spawn-slider-red .spawn-slider-value { background: rgba(255,82,82,0.22); color: #ffcdd2; }
 .spawn-slider-blue .spawn-slider-value { background: rgba(68,138,255,0.22); color: #bbdefb; }
 
 .spawn-slider-input {
   -webkit-appearance: none; appearance: none;
-  width: 100%; height: 6px; border-radius: 999px;
+  width: 100%; height: 4px; border-radius: 999px;
   background: rgba(255,255,255,0.18); outline: none; cursor: pointer;
 }
 .spawn-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
   cursor: pointer; transition: transform 0.1s;
 }
 .spawn-slider-input::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .spawn-slider-input::-moz-range-thumb {
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #fff; border: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
   cursor: pointer;
 }
 .spawn-slider-red .spawn-slider-input::-webkit-slider-thumb { background: #ff8a80; }
@@ -278,10 +282,6 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 .math-quiz-wrong { animation: quiz-shake 0.35s; }
 @keyframes quiz-pop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes quiz-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-
-/* 锁定按钮 */
-.camp-btn.locked { opacity: 0.55; position: relative; }
-.camp-btn.locked::after { content: '🔒'; position: absolute; top: 2px; right: 4px; font-size: 0.8em; }
 
 /* ===================================================================
    军营悬停提示框（战术卡）
