@@ -39,12 +39,14 @@ describe('CampPlacementService', () => {
     expect(service.place({
       actor: 'player', faction: 'red', kind: 'sword', x: 300, y: 300,
     }).ok).toBe(true);
+    const beforeUnauthorized = { ...gs.economy.resources };
     expect(service.place({
       actor: 'player', faction: 'blue', kind: 'sword', x: 1200, y: 300,
     })).toEqual({ ok: false, reason: 'unauthorizedFaction' });
     expect(service.place({
       actor: 'ai', faction: 'red', kind: 'sword', x: 500, y: 300,
     })).toEqual({ ok: false, reason: 'unauthorizedFaction' });
+    expect(gs.economy.resources).toEqual(beforeUnauthorized);
     expect(service.place({
       actor: 'ai', faction: 'blue', kind: 'sword', x: 1200, y: 300,
     }).ok).toBe(true);
@@ -163,15 +165,15 @@ describe('CampPlacementService', () => {
     expect(gs.economy.resources.red).toBe(50);
   });
 
-  it('refunds the blue faction when AI removes its paid camp', () => {
+  it('does not refund when AI removes its paid camp', () => {
     EconomySystem.enterAiBattle(gs);
     service.place({
       actor: 'ai', faction: 'blue', kind: 'sword', x: 1200, y: 300,
     });
+    const before = { ...gs.economy.resources };
 
     expect(service.remove('ai', 'camp-1')).toBe(true);
-    expect(gs.economy.resources.blue).toBe(280);
-    expect(gs.economy.resources.red).toBe(330);
+    expect(gs.economy.resources).toEqual(before);
   });
 });
 

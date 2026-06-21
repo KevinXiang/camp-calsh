@@ -111,7 +111,12 @@ export class CampPlacementService {
     }
 
     this.gs.removeCamp(campId);
-    if (this.gs.mode === 'aiBattle' && !camp.destroyed) {
+    if (
+      this.gs.mode === 'aiBattle' &&
+      actor === 'player' &&
+      camp.faction === 'red' &&
+      !camp.destroyed
+    ) {
       EconomySystem.refundCamp(this.gs, camp.faction, camp.paidCost ?? 0);
     }
     return true;
