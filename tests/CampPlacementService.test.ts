@@ -78,6 +78,21 @@ describe('CampPlacementService', () => {
     expect(gs.economy.resources.red).toBe(before);
   });
 
+  it('rejects non-finite coordinates without spending or creating camps', () => {
+    for (const [x, y] of [[Number.NaN, 300], [300, Number.POSITIVE_INFINITY]]) {
+      const invalidGs = new GameState();
+      EconomySystem.enterAiBattle(invalidGs);
+      const invalidService = new CampPlacementService(invalidGs, () => 'invalid-camp');
+      const before = { ...invalidGs.economy.resources };
+
+      expect(invalidService.place({
+        actor: 'player', faction: 'red', kind: 'sword', x, y,
+      })).toEqual({ ok: false, reason: 'outsideBattlefield' });
+      expect(invalidGs.economy.resources).toEqual(before);
+      expect(invalidGs.allCamps()).toEqual([]);
+    }
+  });
+
   it('deducts the configured price and creates a complete camp with paidCost', () => {
     EconomySystem.enterAiBattle(gs);
 
@@ -265,6 +280,8 @@ describe('PlacementController shared service integration', () => {
       x: 1200, y: 300, leftButtonDown: () => true,
     });
     expect(bridge.getPlacementFailure()).toBe('unauthorizedFaction');
+    bridge.clearPlacementFailure();
+    expect(bridge.getPlacementFailure()).toBeNull();
 
     canvasHandlers.get('drop')!({
       preventDefault: vi.fn(),
@@ -277,6 +294,7 @@ describe('PlacementController shared service integration', () => {
     expect(place).toHaveBeenLastCalledWith({
       actor: 'player', faction: 'blue', kind: 'sword', x: 1200, y: 300,
     });
+    expect(bridge.getPlacementFailure()).toBe('unauthorizedFaction');
   });
 });
 

@@ -33,6 +33,9 @@ export class CampPlacementService {
   ) {}
 
   validate(request: PlacementRequest): PlacementFailure | null {
+    if (!Number.isFinite(request.x) || !Number.isFinite(request.y)) {
+      return 'outsideBattlefield';
+    }
     if (!canPlaceCamp(this.gs.allCamps(), request.x, request.y, CAMP_MIN_DISTANCE)) {
       return 'tooClose';
     }
