@@ -2,6 +2,11 @@ import Phaser from 'phaser';
 import { FACTION_COLORS } from '../config/colors';
 import type { Projectile } from './types';
 
+/** 弓箭抛物线峰值高度（世界坐标 px）— 低于投矛，保持弓箭的直线感 */
+const ARROW_MAX_H = 20;
+/** 弓箭预期飞行距离，与 config/units.ts 中 archer.attackRange=180 同步 */
+const ARROW_EXPECTED_DIST = 180;
+
 /** 投矛抛物线峰值高度（世界坐标 px） */
 const JAVELIN_MAX_H = 40;
 
@@ -45,35 +50,68 @@ export function updateProjectileView(view: Phaser.GameObjects.Container, p: Proj
   return updateArrow(view, p);
 }
 
-/* ───── 箭矢（沿用现状） ───── */
+/* ───── 箭矢：低弧抛物线 + 箭羽 + 影子 ───── */
 
 function drawArrow(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
-  const color = FACTION_COLORS[p.faction];
-  const trail = scene.add.graphics();
-  trail.fillStyle(color, 0.4);
-  trail.fillRect(-12, -1.5, 12, 3);
+  // 影子：地面椭圆（不参与高度变换）
+  const shadow = scene.add.ellipse(0, 0, 12, 4, 0x000000, 0.4);
 
-  const head = scene.add.graphics();
-  head.fillStyle(color, 0.95);
-  head.fillCircle(0, 0, 3);
-  head.fillStyle(0xffffff, 0.6);
-  head.fillCircle(0, 0, 1.5);
+  // 箭体（shaft）：木杆 + 箭头 + 箭羽。承担视觉 y 偏移 + 自身旋转。
+  const shaft = scene.add.graphics();
+  shaft.lineStyle(2.2, 0x8d6e63, 1);              // 木杆
+  shaft.lineBetween(-12, 0, 10, 0);
+  shaft.fillStyle(0xff7043, 1);                   // 箭头
+  shaft.fillTriangle(10, 0, 6, -2.5, 6, 2.5);
+  shaft.fillStyle(0xfff176, 1);                   // 箭羽两片
+  shaft.fillTriangle(-12, 0, -16, -2.5, -12, -1);
+  shaft.fillTriangle(-12, 0, -16, 2.5, -12, 1);
 
-  const root = scene.add.container(p.x, p.y, [trail, head]);
+  const root = scene.add.container(p.x, p.y, [shadow, shaft]);
+  root.setData('startX', p.x);
+  root.setData('startY', p.y);
+  root.setData('shadow', shadow);
+  root.setData('shaft', shaft);
   root.setData('prevX', p.x);
   root.setData('prevY', p.y);
   return root;
 }
 
 function updateArrow(view: Phaser.GameObjects.Container, p: Projectile): void {
+  const shadow = view.getData('shadow') as Phaser.GameObjects.Ellipse | undefined;
+  const shaft = view.getData('shaft') as Phaser.GameObjects.Graphics | undefined;
+  const startX = view.getData('startX');
+  const startY = view.getData('startY');
   const prevX = view.getData('prevX') as number;
   const prevY = view.getData('prevY') as number;
+
+  if (!shadow || !shaft || !Number.isFinite(startX) || !Number.isFinite(startY)) {
+    view.setPosition(p.x, p.y);
+    return;
+  }
+
+  // container 自身定位在地面坐标 (p.x, p.y)
+  view.setPosition(p.x, p.y);
+
+  // 低弧抛物线高度（复用 javelin 算法，峰值减半）
+  const traveled = Math.hypot(p.x - (startX as number), p.y - (startY as number));
+  const t = Math.min(1, traveled / ARROW_EXPECTED_DIST);
+  const visualHeight = 4 * ARROW_MAX_H * t * (1 - t);
+  const heightRatio = visualHeight / ARROW_MAX_H;
+
+  shaft.setPosition(0, -visualHeight);
+
+  // 朝向：沿运动方向旋转（作用于 shaft 子对象）
   const dx = p.x - prevX;
   const dy = p.y - prevY;
-  view.setPosition(p.x, p.y);
   if (dx !== 0 || dy !== 0) {
-    view.setRotation(Math.atan2(dy, dx));
+    shaft.setRotation(Math.atan2(dy, dx));
   }
+
+  // 影子：贴地（container 局部 y=0），按高度缩放淡化
+  shadow.setPosition(0, 0);
+  shadow.setScale(1 - 0.6 * heightRatio);
+  shadow.setAlpha(0.4 - 0.25 * heightRatio);
+
   view.setData('prevX', p.x);
   view.setData('prevY', p.y);
 }
