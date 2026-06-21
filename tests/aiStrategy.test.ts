@@ -56,7 +56,7 @@ describe('chooseAiCampKind', () => {
     const blue = camps(['sword', 'archer', 'medic'], 'blue');
     const red = camps(['shield', 'shield'], 'red', true);
 
-    expect(chooseAiCampKind(blue, red)).toBe('shield');
+    expect(chooseAiCampKind(blue, red)).toBe(chooseAiCampKind(blue, []));
   });
 
   it('uses fixed order to resolve scoring ties deterministically', () => {

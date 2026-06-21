@@ -1,15 +1,18 @@
 import { CAMP_ROLE_DEFS } from '../../config/campRoles';
 import type { Camp, CampKind } from '../types';
 
-const ORDER: CampKind[] = [
-  'sword',
-  'shield',
-  'archer',
-  'javelin',
-  'bomb',
-  'medic',
-  'artillery',
-];
+const TIE_BREAK_ORDER = {
+  sword: 0,
+  shield: 1,
+  archer: 2,
+  javelin: 3,
+  bomb: 4,
+  medic: 5,
+  artillery: 6,
+} satisfies Record<CampKind, number>;
+
+const ORDER = (Object.keys(TIE_BREAK_ORDER) as CampKind[])
+  .sort((a, b) => TIE_BREAK_ORDER[a] - TIE_BREAK_ORDER[b]);
 
 const FRONTLINE = new Set<CampKind>(['sword', 'shield']);
 const SPECIAL_OR_SUPPORT = new Set<CampKind>([

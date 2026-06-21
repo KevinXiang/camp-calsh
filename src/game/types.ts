@@ -96,7 +96,8 @@ export interface SideStats {
 }
 
 /**
- * 军营角色元数据，仅供 UI/设计表达使用，不进入战斗模拟。
+ * 军营角色元数据。bestAgainst/weakAgainst 也供规则型 AI 决策使用；
+ * 其余角色文案主要用于 UI/设计表达，不进入战斗模拟。
  */
 export interface CampRoleDef {
   /** 一句话定位 */
@@ -107,9 +108,9 @@ export interface CampRoleDef {
   strengths: string[];
   /** 主要短板 */
   weaknesses: string[];
-  /** 擅长对付的军营 */
+  /** 擅长对付的军营，供 UI 与规则型 AI 使用 */
   bestAgainst: CampKind[];
-  /** 被哪些军营克制 */
+  /** 被哪些军营克制，供 UI 与规则型 AI 使用 */
   weakAgainst: CampKind[];
   /** 学习层级：1 基础 / 2 战术 / 3 特殊 */
   tier: 1 | 2 | 3;
