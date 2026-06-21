@@ -79,24 +79,34 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       break;
     }
     case 'archer': {
+      // 左手前伸持弓、右手拉弦到脸（形成拉弓蓄势姿态）
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, -3, 0);
-      g.lineBetween(0, -5, -3, 6);
-      g.lineStyle(2.5, 0x66bb6a, 1);
-      const bx = -8, by = -4;
+      g.lineBetween(0, -5, -10, -3);   // 左臂前伸
+      g.lineBetween(0, -5, 4, -10);    // 右臂拉弦到脸
+
+      // 反曲弓身（带反曲线：上下端各一个反向小弯）
+      g.lineStyle(2.8, 0x8d6e63, 1);
       g.beginPath();
-      g.moveTo(bx, by);
-      for (let i = 0; i <= 10; i++) {
-        const t = i / 10;
-        const px = bx + Math.sin(t * Math.PI) * 5;
-        const py = by + t * 16;
-        g.lineTo(px, py);
-      }
+      g.moveTo(-12, -6);
+      g.lineTo(-18, -3);
+      g.lineTo(-13, 2);
+      g.lineTo(-8, 6);
+      g.lineTo(-14, 12);
       g.strokePath();
-      g.lineStyle(2.5, 0xffd54f, 1);
-      g.lineBetween(-8, 6, 9, 6);
-      g.fillStyle(0xff7043, 1);
-      g.fillTriangle(9, 6, 5, 3, 5, 9);
+      // 弓把
+      g.fillStyle(0x5d4037, 1);
+      g.fillRect(-15, 0, 3, 5);
+
+      // 弦：两条线从弓两端汇聚到右脸拉弦点 (4,-10)
+      g.lineStyle(1.2, 0xfff176, 1);
+      g.lineBetween(-13, -6, 4, -10);
+      g.lineBetween(-14, 12, 4, -10);
+
+      // 蓄势搭箭：黄色箭杆沿弦方向 + 小箭头
+      g.lineStyle(2, 0xffd54f, 1);
+      g.lineBetween(-14, 3, 6, -8);
+      g.fillStyle(0xffd54f, 1);
+      g.fillTriangle(6, -8, 2, -10, 2, -5);
       break;
     }
     case 'javelin': {
