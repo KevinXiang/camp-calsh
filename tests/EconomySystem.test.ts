@@ -57,6 +57,9 @@ describe('EconomySystem', () => {
 
     expect(EconomySystem.canAfford(gs, 'red', 330)).toBe(true);
     expect(EconomySystem.canAfford(gs, 'blue', 331)).toBe(false);
+    expect(EconomySystem.canAfford(gs, 'red', -10)).toBe(false);
+    expect(EconomySystem.canAfford(gs, 'red', Number.NaN)).toBe(false);
+    expect(EconomySystem.canAfford(gs, 'red', Number.POSITIVE_INFINITY)).toBe(false);
     expect(gs.economy.resources).toEqual({ red: 330, blue: 330 });
   });
 
@@ -69,6 +72,16 @@ describe('EconomySystem', () => {
     expect(gs.economy.resources.red).toBe(90);
   });
 
+  it('rejects invalid costs without changing the balance', () => {
+    const gs = new GameState();
+    EconomySystem.enterAiBattle(gs);
+
+    expect(EconomySystem.trySpend(gs, 'red', -10)).toBe(false);
+    expect(EconomySystem.trySpend(gs, 'red', Number.NaN)).toBe(false);
+    expect(EconomySystem.trySpend(gs, 'red', Number.POSITIVE_INFINITY)).toBe(false);
+    expect(gs.economy.resources.red).toBe(330);
+  });
+
   it('refunds half of paid cost and nothing for legacy camps', () => {
     const gs = new GameState();
     EconomySystem.enterAiBattle(gs);
@@ -76,6 +89,8 @@ describe('EconomySystem', () => {
     EconomySystem.refundCamp(gs, 'red', 120);
     EconomySystem.refundCamp(gs, 'red', 0);
     EconomySystem.refundCamp(gs, 'red', -10);
+    EconomySystem.refundCamp(gs, 'red', Number.NaN);
+    EconomySystem.refundCamp(gs, 'red', Number.POSITIVE_INFINITY);
 
     expect(gs.economy.resources.red).toBe(390);
   });

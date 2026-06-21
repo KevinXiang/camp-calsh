@@ -23,7 +23,7 @@ export class EconomySystem {
   }
 
   static canAfford(gs: GameState, faction: Faction, cost: number): boolean {
-    return gs.economy.resources[faction] >= cost;
+    return Number.isFinite(cost) && cost >= 0 && gs.economy.resources[faction] >= cost;
   }
 
   static trySpend(gs: GameState, faction: Faction, cost: number): boolean {
@@ -33,7 +33,7 @@ export class EconomySystem {
   }
 
   static refundCamp(gs: GameState, faction: Faction, paidCost: number): void {
-    if (paidCost <= 0) return;
+    if (!Number.isFinite(paidCost) || paidCost <= 0) return;
     gs.economy.resources[faction] += paidCost * AI_BATTLE.refundRatio;
   }
 }
