@@ -265,7 +265,10 @@ export function updateUnitView(view: Phaser.GameObjects.Container, unit: Unit): 
       // 第一次进入死亡：先播倒下旋转 → 再切尸体
       const body = view.getData('body') as Phaser.GameObjects.Container | undefined;
       if (body) {
-        view.scene.tweens.add({
+        // 立即终止该 body 上所有排队中的攻击/闪白 tween，
+        // 防止它们在 body 被 removeAll 销毁后还触发 onStart（会访问 .scene.add/.add 而崩溃）。
+        body.scene.tweens.killTweensOf(body);
+        body.scene.tweens.add({
           targets: body,
           rotation: Math.PI / 2,
           duration: 250,
@@ -361,8 +364,14 @@ export function maybeTriggerAttackAnim(
   }
 }
 
+/** body 被销毁（单位死亡/重开）时跳过后续 tween 回调，避免访问已销毁对象 */
+function isAliveBody(body: Phaser.GameObjects.Container): boolean {
+  return body.active && body.scene && body.scene.scene.isActive();
+}
+
 /** 剑兵挥砍：更快出手、更利落收势（缩短总时长，强化快攻节奏） */
 function playSlashAnim(body: Phaser.GameObjects.Container): void {
+  if (!isAliveBody(body)) return;
   body.scene.tweens.add({
     targets: body,
     rotation: { from: -0.2, to: 0.6 },
@@ -375,8 +384,10 @@ function playSlashAnim(body: Phaser.GameObjects.Container): void {
 
 /** 盾兵盾撞：后退蓄力 0.2s → 急速前冲 0.2s → 归位 0.25s。总 0.65s。 */
 function playBashAnim(body: Phaser.GameObjects.Container): void {
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
   // 段 1：后退蓄力（-8px）
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     x: -8,
     y: 0,
@@ -384,29 +395,33 @@ function playBashAnim(body: Phaser.GameObjects.Container): void {
     ease: 'Cubic.easeOut',
   });
   // 段 2：急速前冲（绝对位置 +12px，相对蓄力位置共 20px 急冲）
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     x: 12,
     y: 0,
     duration: 200,
     ease: 'Cubic.easeIn',
     delay: 200,
+    onStart: () => { if (!isAliveBody(body)) return; },
   });
   // 段 3：归零
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     x: 0,
     y: 0,
     duration: 250,
     ease: 'Sine.easeOut',
     delay: 400,
+    onStart: () => { if (!isAliveBody(body)) return; },
   });
 }
 
 /** 弓兵射箭：蓄势 150ms（后仰）→ 出手 150ms（前甩 + 出手爆闪）→ 回正 150ms */
 function playBowAnim(body: Phaser.GameObjects.Container): void {
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
   // 段 1：蓄势（后仰 ≈14°、轻微下压）
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: 0.25,
     y: -2,
@@ -414,7 +429,7 @@ function playBowAnim(body: Phaser.GameObjects.Container): void {
     ease: 'Cubic.easeOut',
   });
   // 段 2：出手（快速前甩到 ≈-9°），同步触发出手爆闪
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: -0.15,
     y: 0,
@@ -422,12 +437,14 @@ function playBowAnim(body: Phaser.GameObjects.Container): void {
     ease: 'Cubic.easeIn',
     delay: 150,
     onStart: () => {
+      // 单位可能已在 delay 期间死亡，body 被销毁 → 必须检查
+      if (!isAliveBody(body)) return;
       // 出手爆闪：黄色光点叠层，150ms 淡出（不作为独立 CombatEvent，不占 EffectBudget）
-      const flash = body.scene.add.graphics();
+      const flash = scene.add.graphics();
       flash.fillStyle(0xfff176, 0.6);
       flash.fillCircle(0, -10, 8);
       body.add(flash);
-      body.scene.tweens.add({
+      scene.tweens.add({
         targets: flash,
         alpha: { from: 0.6, to: 0 },
         duration: 150,
@@ -436,20 +453,23 @@ function playBowAnim(body: Phaser.GameObjects.Container): void {
     },
   });
   // 段 3：归零
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: 0,
     y: 0,
     duration: 150,
     ease: 'Sine.easeOut',
     delay: 300,
+    onStart: () => { if (!isAliveBody(body)) return; },
   });
 }
 
 /** 投矛三段式：蓄力 0.3s（后仰）→ 出手 0.15s（前甩）→ 归零 0.2s */
 function playJavelinAnim(body: Phaser.GameObjects.Container): void {
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
   // 段 1：蓄力（身体后仰 ≈23°、轻微下压）
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: 0.4,
     y: -2,
@@ -457,37 +477,43 @@ function playJavelinAnim(body: Phaser.GameObjects.Container): void {
     ease: 'Cubic.easeOut',
   });
   // 段 2：出手（快速前甩到 -14°）
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: -0.25,
     y: 0,
     duration: 150,
     ease: 'Cubic.easeIn',
     delay: 300,
+    onStart: () => { if (!isAliveBody(body)) return; },
   });
   // 段 3：归零
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     rotation: 0,
     y: 0,
     duration: 200,
     ease: 'Sine.easeOut',
     delay: 450,
+    onStart: () => { if (!isAliveBody(body)) return; },
   });
 }
 
 /** 炸弹投掷：举高蓄力 0.25s → 投出 0.18s → 归零 0.2s */
 function playBombThrowAnim(body: Phaser.GameObjects.Container): void {
-  body.scene.tweens.add({ targets: body, rotation: 0.3, y: -3, duration: 250, ease: 'Cubic.easeOut' });
-  body.scene.tweens.add({ targets: body, rotation: -0.2, y: 0, duration: 180, ease: 'Cubic.easeIn', delay: 250 });
-  body.scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 430 });
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
+  scene.tweens.add({ targets: body, rotation: 0.3, y: -3, duration: 250, ease: 'Cubic.easeOut' });
+  scene.tweens.add({ targets: body, rotation: -0.2, y: 0, duration: 180, ease: 'Cubic.easeIn', delay: 250, onStart: () => { if (!isAliveBody(body)) return; } });
+  scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 430, onStart: () => { if (!isAliveBody(body)) return; } });
 }
 
 /** 医疗投掷：举高 0.25s → 投出 0.15s → 归零 0.2s */
 function playMedicAnim(body: Phaser.GameObjects.Container): void {
-  body.scene.tweens.add({ targets: body, rotation: 0.2, y: -2, duration: 250, ease: 'Cubic.easeOut' });
-  body.scene.tweens.add({ targets: body, rotation: -0.15, y: 0, duration: 150, ease: 'Cubic.easeIn', delay: 250 });
-  body.scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 400 });
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
+  scene.tweens.add({ targets: body, rotation: 0.2, y: -2, duration: 250, ease: 'Cubic.easeOut' });
+  scene.tweens.add({ targets: body, rotation: -0.15, y: 0, duration: 150, ease: 'Cubic.easeIn', delay: 250, onStart: () => { if (!isAliveBody(body)) return; } });
+  scene.tweens.add({ targets: body, rotation: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 400, onStart: () => { if (!isAliveBody(body)) return; } });
 }
 
 /**
@@ -495,21 +521,22 @@ function playMedicAnim(body: Phaser.GameObjects.Container): void {
  */
 export function triggerHitFlash(view: Phaser.GameObjects.Container): void {
   const body = view.getData('body') as Phaser.GameObjects.Container | undefined;
-  if (!body) return;
+  if (!body || !isAliveBody(body)) return;
 
-  const flash = body.scene.add.graphics();
+  const scene = body.scene;
+  const flash = scene.add.graphics();
   flash.fillStyle(0xffffff, 0.7);
   flash.fillCircle(0, -10, 14);  // 覆盖头+身体范围
   body.add(flash);
 
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: flash,
     alpha: { from: 0.7, to: 0 },
     duration: 150,
     onComplete: () => flash.destroy(),
   });
 
-  body.scene.tweens.add({
+  scene.tweens.add({
     targets: body,
     x: { from: -2, to: 2 },
     duration: 60,
@@ -521,10 +548,12 @@ export function triggerHitFlash(view: Phaser.GameObjects.Container): void {
 
 /** 火炮后坐力：更重的后坐 + 更明显回弹（强化重炮重量感） */
 function playArtilleryAnim(body: Phaser.GameObjects.Container): void {
+  if (!isAliveBody(body)) return;
+  const scene = body.scene;
   // 段 1：重后坐（更深 + 轻微下沉）
-  body.scene.tweens.add({ targets: body, x: -9, y: 2, duration: 130, ease: 'Cubic.easeOut' });
+  scene.tweens.add({ targets: body, x: -9, y: 2, duration: 130, ease: 'Cubic.easeOut' });
   // 段 2：缓慢前倾回弹
-  body.scene.tweens.add({ targets: body, x: 5, y: -1, duration: 240, ease: 'Cubic.easeIn', delay: 130 });
+  scene.tweens.add({ targets: body, x: 5, y: -1, duration: 240, ease: 'Cubic.easeIn', delay: 130, onStart: () => { if (!isAliveBody(body)) return; } });
   // 段 3：归零
-  body.scene.tweens.add({ targets: body, x: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 370 });
+  scene.tweens.add({ targets: body, x: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 370, onStart: () => { if (!isAliveBody(body)) return; } });
 }
