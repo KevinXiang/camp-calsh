@@ -254,6 +254,49 @@ describe('AiController', () => {
     }
   });
 
+  it('applies edge margins at the minimum random extreme', () => {
+    const { gs, ai, placement } = setup(() => 0);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    const validate = vi.spyOn(placement, 'validate').mockReturnValue(null);
+    vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    ai.deployInitialCamp();
+
+    const battlefield = AI_BATTLE.battlefield;
+    expect(validate.mock.calls[0][0]).toMatchObject({
+      x: battlefield.midX + battlefield.edgeMargin,
+      y: battlefield.minY + battlefield.edgeMargin,
+    });
+  });
+
+  it('applies edge margins at the maximum random extreme', () => {
+    const randomValue = 0.999999;
+    const { gs, ai, placement } = setup(() => randomValue);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    const validate = vi.spyOn(placement, 'validate').mockReturnValue(null);
+    vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    ai.deployInitialCamp();
+
+    const battlefield = AI_BATTLE.battlefield;
+    const minX = battlefield.midX + battlefield.edgeMargin;
+    const maxX = battlefield.maxX - battlefield.edgeMargin;
+    const minY = battlefield.minY + battlefield.edgeMargin;
+    const maxY = battlefield.maxY - battlefield.edgeMargin;
+    expect(validate.mock.calls[0][0].x).toBeCloseTo(
+      minX + randomValue * (maxX - minX),
+    );
+    expect(validate.mock.calls[0][0].y).toBeCloseTo(
+      minY + randomValue * (maxY - minY),
+    );
+  });
+
   it('can choose a non-first candidate from the scored top three', () => {
     const battlefield = AI_BATTLE.battlefield;
     const minX = battlefield.midX + battlefield.edgeMargin;
@@ -291,6 +334,34 @@ describe('AiController', () => {
       kind: 'sword',
       x: 970,
       y: 300,
+    });
+  });
+
+  it('prefers the 55 percent blue-half position for middle-line camps', () => {
+    const battlefield = AI_BATTLE.battlefield;
+    const preferredX = battlefield.midX
+      + (battlefield.maxX - battlefield.midX) * 0.55;
+    const random = cyclingCandidateRandom(
+      [battlefield.midX + 160, preferredX, battlefield.maxX - 180],
+      700,
+    );
+    const { gs, ai, placement } = setup(random);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    addCamp(gs, 'blue-1', 'blue', 'sword', 1050, 200);
+    vi.spyOn(placement, 'validate').mockReturnValue(null);
+    const place = vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    ai.deployInitialCamp();
+
+    expect(place).toHaveBeenCalledWith({
+      actor: 'ai',
+      faction: 'blue',
+      kind: 'archer',
+      x: preferredX,
+      y: 700,
     });
   });
 
