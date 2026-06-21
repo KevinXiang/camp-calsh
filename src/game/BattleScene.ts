@@ -32,6 +32,7 @@ export class BattleScene extends Phaser.Scene {
   private unitManager!: UnitManager;
   private effects!: EffectManager;
   private bridge!: UiBridge;
+  private lastStatsSig = '';
 
   constructor() { super('BattleScene'); }
 
@@ -120,13 +121,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.gameState.events.length > 0) {
       for (const ev of this.gameState.events) {
         if (ev.kind === 'meleeHit' || ev.kind === 'arrowHit' || ev.kind === 'javelinHit' || ev.kind === 'shieldBlock' || ev.kind === 'bombHit') {
-          for (const u of this.gameState.allUnits()) {
-            if (u.alive && Math.abs(u.x - ev.x) < 1 && Math.abs(u.y - ev.y) < 1) {
-              const v = this.unitViews.get(u.id);
-              if (v) triggerHitFlash(v);
-              break;
-            }
-          }
+          const v = this.unitViews.get(ev.unitId);
+          if (v) triggerHitFlash(v);
         }
       }
       this.effects.dispatch(this.gameState.events);
@@ -142,7 +138,26 @@ export class BattleScene extends Phaser.Scene {
     this.syncCampViews();
     this.syncUnitViews();
     this.syncProjectileViews();
-    this.bridge.emit('statsChanged');
+    this.maybeEmitStatsChanged();
+  }
+
+  /** 仅在统计快照变化时触发 statsChanged，降低 UI 刷新频率 */
+  private maybeEmitStatsChanged(): void {
+    let redAlive = 0, blueAlive = 0, redCamps = 0, blueCamps = 0;
+    for (const u of this.gameState.units.values()) {
+      if (!u.alive) continue;
+      if (u.faction === 'red') redAlive++; else blueAlive++;
+    }
+    for (const c of this.gameState.camps.values()) {
+      if (c.destroyed) continue;
+      if (c.faction === 'red') redCamps++; else blueCamps++;
+    }
+    const s = this.gameState.stats;
+    const sig = `${redAlive}|${blueAlive}|${redCamps}|${blueCamps}|${s.red.kills}|${s.blue.kills}|${s.red.campsDestroyed}|${s.blue.campsDestroyed}`;
+    if (sig !== this.lastStatsSig) {
+      this.lastStatsSig = sig;
+      this.bridge.emit('statsChanged');
+    }
   }
 
   private syncCampViews(): void {

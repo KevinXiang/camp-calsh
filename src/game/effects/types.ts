@@ -1,11 +1,11 @@
 import type { Faction } from '../types';
 
 export type CombatEvent =
-  | { kind: 'meleeHit'; x: number; y: number; faction: Faction }
-  | { kind: 'arrowHit'; x: number; y: number; faction: Faction }
-  | { kind: 'javelinHit'; x: number; y: number; faction: Faction }
-  | { kind: 'shieldBlock'; x: number; y: number; faction: Faction }
-  | { kind: 'bombHit'; x: number; y: number; faction: Faction }
+  | { kind: 'meleeHit'; unitId: string; x: number; y: number; faction: Faction }
+  | { kind: 'arrowHit'; unitId: string; x: number; y: number; faction: Faction }
+  | { kind: 'javelinHit'; unitId: string; x: number; y: number; faction: Faction }
+  | { kind: 'shieldBlock'; unitId: string; x: number; y: number; faction: Faction }
+  | { kind: 'bombHit'; unitId: string; x: number; y: number; faction: Faction }
   | { kind: 'bombExplosion'; x: number; y: number; faction: Faction }
   | { kind: 'artilleryExplosion'; x: number; y: number; faction: Faction }
   | { kind: 'healHit'; x: number; y: number; faction: Faction }
