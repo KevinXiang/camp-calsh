@@ -88,8 +88,23 @@ describe('AiController', () => {
     addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
 
     expect(ai.deployInitialCamp()).toBe(true);
-    expect(gs.ai.decisionCooldown).toBe(0);
+    expect(gs.ai.decisionCooldown).toBe(AI_BATTLE.decisionInterval);
     expect(gs.allCamps().filter(camp => camp.faction === 'blue')).toHaveLength(1);
+
+    gs.sim.running = true;
+    expect(ai.step(1 / 60, false)).toBe(false);
+    expect(gs.allCamps().filter(camp => camp.faction === 'blue')).toHaveLength(1);
+  });
+
+  it('keeps startup cooldown at zero when initial deployment fails', () => {
+    const { gs, ai } = setup();
+    gs.sim.running = false;
+    gs.economy.resources.blue = 0;
+    gs.ai.decisionCooldown = 7;
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+
+    expect(ai.deployInitialCamp()).toBe(false);
+    expect(gs.ai.decisionCooldown).toBe(0);
   });
 
   it('does not run normal decisions while simulation is paused', () => {
@@ -139,11 +154,37 @@ describe('AiController', () => {
     gs.getCamp('red-2')!.destroyed = true;
     addCamp(gs, 'red-3', 'red', 'shield', 300, 500);
     addCamp(gs, 'red-4', 'red', 'shield', 500, 500);
+    gs.ai.failedPlacements = 2;
     gs.ai.decisionCooldown = 0;
 
     ai.step(2, false);
     expect(gs.ai.targetKind).toBe('bomb');
     expect(gs.ai.targetRedSignature).toBe('shield|shield');
+    expect(gs.ai.failedPlacements).toBe(0);
+  });
+
+  it('re-evaluates a saved target when the living blue composition changes', () => {
+    const { gs, ai } = setup();
+    addCamp(gs, 'blue-1', 'blue', 'sword', 1050, 200);
+    addCamp(gs, 'blue-2', 'blue', 'archer', 1250, 200);
+    addCamp(gs, 'blue-3', 'blue', 'medic', 1450, 200);
+    addCamp(gs, 'red-1', 'red', 'artillery', 300, 300);
+    addCamp(gs, 'red-2', 'red', 'artillery', 500, 300);
+    gs.economy.resources.blue = 0;
+
+    ai.step(2, false);
+    expect(gs.ai.targetKind).toBe('javelin');
+    expect(gs.ai.targetBlueSignature).toBe('archer|medic|sword');
+
+    gs.getCamp('blue-1')!.destroyed = true;
+    gs.ai.failedPlacements = 2;
+    gs.ai.decisionCooldown = 0;
+
+    ai.step(2, false);
+    expect(gs.ai.targetKind).toBe('sword');
+    expect(gs.ai.targetRedSignature).toBe('artillery|artillery');
+    expect(gs.ai.targetBlueSignature).toBe('archer|medic');
+    expect(gs.ai.failedPlacements).toBe(0);
   });
 
   it('does not spend when every sampled position is blocked', () => {
@@ -295,6 +336,42 @@ describe('AiController', () => {
     expect(validate.mock.calls[0][0].y).toBeCloseTo(
       minY + randomValue * (maxY - minY),
     );
+  });
+
+  it.each([
+    ['one', 1],
+    ['NaN', Number.NaN],
+    ['negative', -1],
+    ['infinity', Number.POSITIVE_INFINITY],
+  ])('normalizes %s random values for coordinates and selection', (_, value) => {
+    const { gs, ai, placement } = setup(() => value);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    const validate = vi.spyOn(placement, 'validate').mockReturnValue(null);
+    const place = vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    expect(() => ai.deployInitialCamp()).not.toThrow();
+
+    const battlefield = AI_BATTLE.battlefield;
+    for (const [request] of validate.mock.calls) {
+      expect(Number.isFinite(request.x)).toBe(true);
+      expect(Number.isFinite(request.y)).toBe(true);
+      expect(request.x).toBeGreaterThanOrEqual(
+        battlefield.midX + battlefield.edgeMargin,
+      );
+      expect(request.x).toBeLessThanOrEqual(
+        battlefield.maxX - battlefield.edgeMargin,
+      );
+      expect(request.y).toBeGreaterThanOrEqual(
+        battlefield.minY + battlefield.edgeMargin,
+      );
+      expect(request.y).toBeLessThanOrEqual(
+        battlefield.maxY - battlefield.edgeMargin,
+      );
+    }
+    expect(place).toHaveBeenCalledOnce();
   });
 
   it('can choose a non-first candidate from the scored top three', () => {

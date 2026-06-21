@@ -10,6 +10,7 @@ export interface AiState {
   decisionCooldown: number;
   targetKind: CampKind | null;
   targetRedSignature: string;
+  targetBlueSignature: string;
   failedPlacements: number;
 }
 
@@ -36,6 +37,7 @@ export class GameState {
     decisionCooldown: 0,
     targetKind: null,
     targetRedSignature: '',
+    targetBlueSignature: '',
     failedPlacements: 0,
   };
   readonly camps = new Map<string, Camp>();

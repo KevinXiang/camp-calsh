@@ -23,6 +23,7 @@ describe('GameState', () => {
       decisionCooldown: 0,
       targetKind: null,
       targetRedSignature: '',
+      targetBlueSignature: '',
       failedPlacements: 0,
     });
   });
