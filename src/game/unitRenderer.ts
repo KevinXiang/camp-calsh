@@ -57,25 +57,40 @@ function drawStickFigure(g: Phaser.GameObjects.Graphics, faction: Faction, kind:
 function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: number): void {
   switch (kind) {
     case 'sword': {
+      // 剑兵：更宽的剑刃 + 明显剑柄 + 利落挥砍姿态
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, -9, 1);
-      g.lineBetween(0, -5, 10, -2);
-      g.lineStyle(3, 0xffd54f, 1);
-      g.lineBetween(10, -2, 17, -10);
-      g.lineStyle(1.5, 0xfff176, 0.7);
-      g.lineBetween(11, -2, 7, 3);
+      g.lineBetween(0, -5, -9, 1);                       // 左臂
+      g.lineBetween(0, -5, 10, -2);                      // 右臂持剑
+      // 剑刃（更宽 + 双色金属感）
+      g.fillStyle(0xffd54f, 1);
+      g.fillTriangle(10, -2, 20, -12, 16, -6);          // 上刃
+      g.fillTriangle(10, -2, 16, -6, 14, 0);            // 下刃
+      g.lineStyle(1.2, 0xbf360c, 0.9);
+      g.strokeTriangle(10, -2, 20, -12, 16, -6);
+      // 剑柄护手 + 高光
+      g.lineStyle(2, 0xfff176, 0.9);
+      g.lineBetween(7, 1, 13, -5);
+      g.fillStyle(0x5d4037, 1);
+      g.fillCircle(8, 1, 1.6);                            // 柄末圆头
       break;
     }
     case 'shield': {
+      // 盾兵更宽：加大盾牌直径 + 双层盾框
       g.lineStyle(BODY_W - 0.3, color, 1);
       g.lineBetween(0, -5, 9, 2);
       g.lineBetween(0, -5, -9, 1);
-      g.fillStyle(0xb0bec5, 0.85);
-      g.fillCircle(-11, 2, 7);
-      g.lineStyle(2, 0x78909c, 0.8);
-      g.strokeCircle(-11, 2, 7);
-      g.fillStyle(0xcfd8dc, 0.7);
-      g.fillCircle(-11, 2, 3.5);
+      // 主盾：更宽的椭圆大盾
+      g.fillStyle(0xb0bec5, 0.92);
+      g.fillEllipse(-13, 2, 18, 16);
+      g.lineStyle(2.2, 0x546e7a, 0.95);
+      g.strokeEllipse(-13, 2, 18, 16);
+      // 盾内圆心（双圈金属感）
+      g.fillStyle(0xcfd8dc, 0.85);
+      g.fillCircle(-13, 2, 5);
+      g.lineStyle(1.2, 0x78909c, 0.7);
+      g.strokeCircle(-13, 2, 5);
+      g.fillStyle(0x78909c, 0.9);
+      g.fillCircle(-13, 2, 1.8);
       break;
     }
     case 'archer': {
@@ -110,53 +125,100 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       break;
     }
     case 'javelin': {
+      // 投矛：矛更长、高举过头，尖端更尖
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, -8, 4);
-      g.lineBetween(0, -5, 6, -10);
-      g.lineStyle(2.8, 0xff8a65, 1);
-      g.lineBetween(6, -10, 16, -20);
-      g.fillStyle(0xffab91, 1);
-      g.fillCircle(16, -20, 3);
+      g.lineBetween(0, -5, -8, 4);                       // 左臂
+      g.lineBetween(0, -5, 6, -12);                      // 右臂上举
+      // 长矛杆（更长 + 木质感）
+      g.lineStyle(3.2, 0xa1887f, 1);
+      g.lineBetween(6, -12, 18, -26);
+      // 矛尾缠绕
+      g.lineStyle(1.5, 0x5d4037, 1);
+      g.lineBetween(7, -11, 9, -13);
+      // 金属矛头（更明显三角）
+      g.fillStyle(0xff8a65, 1);
+      g.fillTriangle(18, -26, 14, -22, 22, -22);
+      g.lineStyle(1, 0xbf360c, 0.8);
+      g.strokeTriangle(18, -26, 14, -22, 22, -22);
+      // 矛头高光
+      g.fillStyle(0xffccbc, 0.85);
+      g.fillTriangle(18, -26, 16, -23, 19, -23);
       break;
     }
     case 'bomb': {
+      // 爆破兵明显抱持爆弹：双手抱更大的 TNT 箱
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, 8, -8);
+      g.lineBetween(0, -5, 10, -7);                      // 右臂抱箱
+      g.lineBetween(0, -5, -10, -3);                     // 左臂托箱
+      // 更大的 TNT 木箱
       g.fillStyle(0xc62828, 1);
-      g.fillRect(8, -12, 8, 7);
-      g.lineStyle(0.8, 0xffffff, 0.9);
-      g.lineBetween(8, -10, 16, -10);
+      g.fillRect(7, -14, 12, 11);
+      g.lineStyle(1.2, 0x000000, 0.4);
+      g.strokeRect(7, -14, 12, 11);
+      // TNT 字 + 横条
+      g.fillStyle(0xffffff, 0.95);
+      g.fillRect(9, -12, 8, 2);
+      g.fillRect(9, -7, 8, 2);
+      // 引信 + 火星
+      g.lineStyle(1.3, 0x5d4037, 1);
+      g.lineBetween(13, -14, 14, -19);
       g.fillStyle(0xff7043, 1);
-      g.fillCircle(12, -13, 1);
+      g.fillCircle(14, -19, 1.8);
+      g.fillStyle(0xffeb3b, 0.85);
+      g.fillCircle(14, -20, 1);
       break;
     }
     case 'medic': {
+      // 医疗兵：更大的医疗包 + 阵营色十字 + 胸前十字徽章
+      // 大医疗包（白色加粗）
       g.fillStyle(0xffffff, 0.95);
-      g.fillRect(-6, -8, 12, 16);
-      g.lineStyle(0.5, 0xcccccc, 1);
-      g.strokeRect(-6, -8, 12, 16);
-      // 阵营色十字（区分红蓝）
-      g.lineStyle(2.5, color, 1);
-      g.lineBetween(0, -12, 0, 4);
-      g.lineBetween(-6, -4, 6, -4);
-      g.fillStyle(0xffffff, 1);
-      g.fillRect(8, -6, 7, 5);
-      g.lineStyle(0.5, 0x4caf50, 0.7);
-      g.strokeRect(8, -6, 7, 5);
-      g.lineStyle(1.5, color, 0.8);
-      g.lineBetween(10, -5, 13, -2);
-      g.lineBetween(11.5, -4, 11.5, -2);
+      g.fillRect(-7, -9, 14, 18);
+      g.lineStyle(0.7, 0xbdbdbd, 1);
+      g.strokeRect(-7, -9, 14, 18);
+      // 包侧拉链
+      g.lineStyle(0.5, 0x9e9e9e, 0.8);
+      g.lineBetween(-7, 0, 7, 0);
+      // 大阵营色十字（更突出）
+      g.lineStyle(3.2, color, 1);
+      g.lineBetween(0, -13, 0, 5);
+      g.lineBetween(-7, -4, 7, -4);
+      // 右侧药瓶
+      g.fillStyle(0xe0f2f1, 0.95);
+      g.fillRect(9, -7, 7, 6);
+      g.lineStyle(0.5, 0x4caf50, 0.8);
+      g.strokeRect(9, -7, 7, 6);
+      g.lineStyle(1.8, color, 0.9);
+      g.lineBetween(11, -6, 14, -2);
+      g.lineBetween(12.5, -5, 12.5, -2);
       break;
     }
     case 'artillery': {
+      // 火炮兵：更重的重武器感（大炮筒 + 火焰口 + 弹壳）
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, 8, -6);
+      g.lineBetween(0, -5, 8, -6);                       // 右臂扶炮
+      g.lineBetween(0, -5, -10, -3);                     // 左臂托弹
+      // 大炮筒（更长更粗）
       g.fillStyle(0x424242, 1);
-      g.fillRect(8, -10, 10, 6);
-      g.lineStyle(1, 0x000000, 0.3);
-      g.strokeRect(8, -10, 10, 6);
-      g.fillStyle(0xff6d00, 0.9);
-      g.fillCircle(13, -13, 2);
+      g.fillRect(7, -13, 14, 8);
+      g.lineStyle(1.5, 0x000000, 0.4);
+      g.strokeRect(7, -13, 14, 8);
+      // 炮口圆环
+      g.fillStyle(0x212121, 1);
+      g.fillCircle(21, -9, 3);
+      g.lineStyle(1.2, 0x616161, 0.9);
+      g.strokeCircle(21, -9, 3);
+      // 火焰口余烬
+      g.fillStyle(0xff6d00, 0.95);
+      g.fillCircle(21, -9, 1.8);
+      g.fillStyle(0xffeb3b, 0.7);
+      g.fillCircle(21, -9, 0.9);
+      // 左臂托的弹壳
+      g.fillStyle(0xffab00, 0.95);
+      g.fillRect(-13, -5, 4, 8);
+      g.lineStyle(0.7, 0xbf360c, 0.8);
+      g.strokeRect(-13, -5, 4, 8);
+      g.fillStyle(0xff6f00, 1);
+      g.fillRect(-13, -5, 4, 2);
       break;
     }
   }
@@ -299,13 +361,13 @@ export function maybeTriggerAttackAnim(
   }
 }
 
-/** 剑兵挥砍：body 旋转挥砍（yoyo 回到 0，不与 walk 冲突） */
+/** 剑兵挥砍：更快出手、更利落收势（缩短总时长，强化快攻节奏） */
 function playSlashAnim(body: Phaser.GameObjects.Container): void {
   body.scene.tweens.add({
     targets: body,
-    rotation: { from: 0, to: 0.5 },
-    y: 0,           // 顺手把竖直位置归零（可能停在 walk 半程）
-    duration: 120,
+    rotation: { from: -0.2, to: 0.6 },
+    y: 0,
+    duration: 90,
     yoyo: true,
     ease: 'Cubic.easeOut',
   });
@@ -457,9 +519,12 @@ export function triggerHitFlash(view: Phaser.GameObjects.Container): void {
   });
 }
 
-/** 火炮后坐力：body 后退 0.15s → 回弹 0.2s → 归零 0.15s */
+/** 火炮后坐力：更重的后坐 + 更明显回弹（强化重炮重量感） */
 function playArtilleryAnim(body: Phaser.GameObjects.Container): void {
-  body.scene.tweens.add({ targets: body, x: -6, y: 0, duration: 150, ease: 'Cubic.easeOut' });
-  body.scene.tweens.add({ targets: body, x: 4, y: 0, duration: 200, ease: 'Cubic.easeIn', delay: 150 });
-  body.scene.tweens.add({ targets: body, x: 0, y: 0, duration: 150, ease: 'Sine.easeOut', delay: 350 });
+  // 段 1：重后坐（更深 + 轻微下沉）
+  body.scene.tweens.add({ targets: body, x: -9, y: 2, duration: 130, ease: 'Cubic.easeOut' });
+  // 段 2：缓慢前倾回弹
+  body.scene.tweens.add({ targets: body, x: 5, y: -1, duration: 240, ease: 'Cubic.easeIn', delay: 130 });
+  // 段 3：归零
+  body.scene.tweens.add({ targets: body, x: 0, y: 0, duration: 200, ease: 'Sine.easeOut', delay: 370 });
 }

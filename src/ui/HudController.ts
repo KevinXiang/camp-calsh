@@ -17,43 +17,61 @@ export class HudController {
   private render(): void {
     const s = this.gs();
     let redTotal = 0, blueTotal = 0, redAlive = 0, blueAlive = 0;
+    let redCamps = 0, blueCamps = 0;
     for (const u of s.units.values()) {
       if (u.faction === 'red') { redTotal++; if (u.alive) redAlive++; }
       else { blueTotal++; if (u.alive) blueAlive++; }
     }
-    const total = redTotal + blueTotal;
-    let winner = '';
-    if (total > 0 && redAlive === 0 && blueAlive > 0) winner = '🔵 蓝方胜';
-    else if (total > 0 && blueAlive === 0 && redAlive > 0) winner = '🔴 红方胜';
-    else if (total > 0) winner = '⚔️ 战斗中';
+    for (const c of s.camps.values()) {
+      if (c.destroyed) continue;
+      if (c.faction === 'red') redCamps++; else blueCamps++;
+    }
+    const total = redAlive + blueAlive;
+
+    // 优势方：综合存活单位 + 存活营地作为战局强度权重
+    const redPower = redAlive + redCamps * 5;
+    const bluePower = blueAlive + blueCamps * 5;
+    const redAdvantage = redPower > bluePower * 1.2 && redPower > 0;
+    const blueAdvantage = bluePower > redPower * 1.2 && bluePower > 0;
+    const redClass = blueAdvantage ? 'hud-disadvantage' : (redAdvantage ? 'hud-advantage-red' : '');
+    const blueClass = redAdvantage ? 'hud-disadvantage' : (blueAdvantage ? 'hud-advantage-blue' : '');
+
+    let status = '';
+    if (total > 0 && redAlive === 0 && blueAlive > 0) status = '🔵 蓝方胜';
+    else if (total > 0 && blueAlive === 0 && redAlive > 0) status = '🔴 红方胜';
+    else if (total > 0) {
+      if (redAdvantage) status = '🔴 红方占优';
+      else if (blueAdvantage) status = '🔵 蓝方占优';
+      else status = '⚔️ 势均力敌';
+    }
     const speedLabel = s.sim.running ? `${s.sim.speed}x` : '⏸';
 
     this.el.innerHTML = `
-      <span class="hud-section">
+      <span class="hud-section ${redClass}">
         <span class="hud-icon">🔴</span>
-        <span class="hud-num">${redTotal}</span>
-        <span class="hud-sublabel">总</span>
-        <span class="hud-num hud-alive">${redAlive}</span>
-        <span class="hud-sublabel">活</span>
+        <span class="hud-num">${redAlive}</span>
+        <span class="hud-sublabel">单位</span>
+        <span class="hud-num">${redCamps}</span>
+        <span class="hud-sublabel">营地</span>
       </span>
       <span class="hud-divider"></span>
-      <span class="hud-section">
+      <span class="hud-section ${blueClass}">
         <span class="hud-icon">🔵</span>
-        <span class="hud-num">${blueTotal}</span>
-        <span class="hud-sublabel">总</span>
-        <span class="hud-num hud-alive">${blueAlive}</span>
-        <span class="hud-sublabel">活</span>
+        <span class="hud-num">${blueAlive}</span>
+        <span class="hud-sublabel">单位</span>
+        <span class="hud-num">${blueCamps}</span>
+        <span class="hud-sublabel">营地</span>
       </span>
       <span class="hud-divider"></span>
       <span class="hud-section">
         <span class="hud-icon">👥</span>
         <span class="hud-num">${total}</span>
-        <span class="hud-sublabel">总计</span>
+        <span class="hud-sublabel">在场</span>
       </span>
-      <span class="hud-winner">${winner}</span>
+      <span class="hud-winner">${status}</span>
       <span class="hud-speed">${speedLabel}</span>
       ${s.sim.unlockTimer > 0
-        ? `<span class="hud-section"><span class="hud-icon">🔓</span><span class="hud-num">${Math.ceil(s.sim.unlockTimer)}</span><span class="hud-sublabel">s 解锁</span></span>`
+        ? `<span class="hud-section"><span class="hud-icon">🔓</span><span class="hud-num">${Math.ceil(s.sim.unlockTimer)}</span><span class="hud-sublabel">s</span></span>`
         : `<span class="hud-section"><span class="hud-icon">🔒</span><span class="hud-sublabel">投矛/爆破锁定</span></span>`}
     `;
   }

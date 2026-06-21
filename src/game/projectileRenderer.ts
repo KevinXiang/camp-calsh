@@ -28,19 +28,70 @@ const ARTILLERY_MAX_H = 60;
 const ARTILLERY_EXPECTED_DIST = 280;
 
 export function drawProjectile(scene: Phaser.Scene, p: Projectile): Phaser.GameObjects.Container {
-  if (p.kind === 'javelin')    return drawJavelin(scene, p);
-  if (p.kind === 'bomb')       return drawBomb(scene, p);
-  if (p.kind === 'heal')       return drawHeal(scene, p);
-  if (p.kind === 'artillery')  return drawArtillery(scene, p);
-  return drawArrow(scene, p);
+  const view = p.kind === 'javelin'   ? drawJavelin(scene, p)
+             : p.kind === 'bomb'      ? drawBomb(scene, p)
+             : p.kind === 'heal'      ? drawHeal(scene, p)
+             : p.kind === 'artillery' ? drawArtillery(scene, p)
+             : drawArrow(scene, p);
+  // 持久尾迹层：每个投射物复用一个子 graphics，每帧 clear+redraw 最近若干位置。
+  // 避免之前 maybeEmitTrail 每帧 scene.add.graphics() 造成的累积卡死。
+  const trail = scene.add.graphics();
+  trail.setDepth(-0.5);  // 在影子之下、投射物本体之下
+  view.add(trail);
+  view.setData('trail', trail);
+  view.setData('trailHistory', [] as { x: number; y: number }[]);  // 最近若干个世界坐标
+  view.setData('trailKind', p.kind);
+  return view;
 }
 
 export function updateProjectileView(view: Phaser.GameObjects.Container, p: Projectile): void {
-  if (p.kind === 'javelin')    return updateJavelin(view, p);
-  if (p.kind === 'bomb')       return updateBomb(view, p);
-  if (p.kind === 'heal')       return updateHeal(view, p);
-  if (p.kind === 'artillery')  return updateArtillery(view, p);
-  return updateArrow(view, p);
+  if (p.kind === 'javelin')    updateJavelin(view, p);
+  else if (p.kind === 'bomb')  updateBomb(view, p);
+  else if (p.kind === 'heal')  updateHeal(view, p);
+  else if (p.kind === 'artillery') updateArtillery(view, p);
+  else                          updateArrow(view, p);
+
+  // 持久尾迹：在子 graphics 上重绘最近若干位置的褪色微粒，0 新增 scene 对象。
+  drawTrail(view, p);
+}
+
+/** 各类投射物尾迹配色与半径 */
+const TRAIL_STYLE: Record<Projectile['kind'], { color: number; radius: number; maxPoints: number }> = {
+  arrow:     { color: 0xfff8e1, radius: 1.8, maxPoints: 5 },   // 轻风痕
+  javelin:   { color: 0xffab91, radius: 2.4, maxPoints: 6 },   // 矛尾
+  bomb:      { color: 0xff7043, radius: 2.2, maxPoints: 6 },   // 短火星
+  heal:      { color: 0x81c784, radius: 2.6, maxPoints: 4 },   // 柔和脉冲
+  artillery: { color: 0xff6d00, radius: 3.0, maxPoints: 8 },   // 烟尾火焰
+};
+
+/**
+ * 在投射物持久子 graphics 上重绘尾迹：
+ * 记录最近若干个世界位置，按 alpha 递减画圆点。container 自身定位在 (p.x,p.y)，
+ * 所以子对象用相对坐标：把历史点减去当前 (p.x,p.y)。
+ * 全程只 clear+redraw 同一个 graphics，不分配新显示对象。
+ */
+function drawTrail(view: Phaser.GameObjects.Container, p: Projectile): void {
+  const trail = view.getData('trail') as Phaser.GameObjects.Graphics | undefined;
+  if (!trail) return;
+  const hist = view.getData('trailHistory') as { x: number; y: number }[] | undefined;
+  if (!hist) return;
+
+  // 推入当前位置，裁剪到 maxPoints（保持最近 N 个）
+  const style = TRAIL_STYLE[p.kind] ?? TRAIL_STYLE.arrow;
+  hist.push({ x: p.x, y: p.y });
+  while (hist.length > style.maxPoints) hist.shift();
+
+  // 重绘：从老→新，alpha 递增
+  trail.clear();
+  const n = hist.length;
+  for (let i = 0; i < n; i++) {
+    const pt = hist[i];
+    const t = (i + 1) / n;            // 0..1，越新越亮
+    const alpha = t * (p.kind === 'heal' ? 0.45 : 0.6);
+    // 子对象相对坐标：世界位置 - container 位置
+    trail.fillStyle(style.color, alpha);
+    trail.fillCircle(pt.x - p.x, pt.y - p.y, style.radius * (0.5 + t * 0.5));
+  }
 }
 
 /* ───── 箭矢：低弧抛物线 + 箭羽 + 影子 ───── */

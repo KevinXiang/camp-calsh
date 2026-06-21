@@ -30,14 +30,67 @@ export function drawCamp(scene: Phaser.Scene, camp: Camp): Phaser.GameObjects.Co
   const root = scene.add.container(camp.x, camp.y, [g, hpBg, hpFill]);
   root.setData('hpFill', hpFill);
   root.setData('ruined', false);
+  root.setData('damageOverlay', null);   // 受损阶段叠加层（轻/重裂纹）
+  root.setData('kind', camp.kind);
   return root;
 }
 
 /**
- * 兵营摧毁蒙层：在 container 上追加独立的覆层 graphics（child[3]）。
- * 黑色半透明覆盖 + 3 道深红裂纹，确保在已有营地图形之上可见。
+ * 受损阶段叠加：根据 hp ratio 在营地上覆盖轻/重裂纹。
+ * - ratio <= 0.66：浅裂纹 + 轻暗化
+ * - ratio <= 0.33：更深裂纹 + 轻烟点
+ * 与 syncCampViews() 配合，每次血量跨越阶段时重建。
+ */
+export function drawDamageOverlay(view: Phaser.GameObjects.Container, kind: CampKind, ratio: number): void {
+  const prev = view.getData('damageOverlay') as Phaser.GameObjects.Graphics | null;
+  // 重建策略：进入新阶段（>0.66 / 0.33-0.66 / <0.33）才重绘
+  const stage = ratio > 0.66 ? 0 : ratio > 0.33 ? 1 : 2;
+  if (view.getData('damageStage') === stage) return;
+  view.setData('damageStage', stage);
+
+  if (prev) { prev.destroy(); }
+  if (stage === 0) {
+    view.setData('damageOverlay', null);
+    return;
+  }
+  const overlay = view.scene.add.graphics();
+  // 轻暗化：阶段 2 更深
+  overlay.fillStyle(0x000000, stage === 2 ? 0.32 : 0.18);
+  overlay.fillRect(-50, -80, 100, 140);
+
+  // 裂纹：阶段 1 用 2 条浅裂纹，阶段 2 用 4 条深裂纹 + 烟点
+  const crackColor = 0x3e2723;
+  const crackAlpha = stage === 2 ? 0.85 : 0.55;
+  const crackCount = stage === 2 ? 4 : 2;
+  overlay.lineStyle(stage === 2 ? 2.2 : 1.5, crackColor, crackAlpha);
+  // 伪随机但确定性（每个营地不同）：用 kind 字符长度作种子扰动
+  const seed = kind.length * 7;
+  for (let i = 0; i < crackCount; i++) {
+    const ox = -30 + ((i * 17 + seed) % 50);
+    const oy = -30 + ((i * 23 + seed) % 60);
+    overlay.lineBetween(ox - 8, oy, ox + 8, oy + ((i * 13) % 12) - 6);
+  }
+
+  // 阶段 2：加 2 个轻烟点（灰色小圆）
+  if (stage === 2) {
+    overlay.fillStyle(0x616161, 0.55);
+    overlay.fillCircle(-14, -34, 4);
+    overlay.fillCircle(18, -28, 5);
+    overlay.fillStyle(0x9e9e9e, 0.35);
+    overlay.fillCircle(-14, -38, 6);
+    overlay.fillCircle(18, -32, 7);
+  }
+
+  view.add(overlay);
+  view.setData('damageOverlay', overlay);
+}
+
+/**
+ * 兵营摧毁蒙层：在 container 上追加独立的覆层 graphics（child[N]）。
+ * 黑色半透明覆盖 + 深红裂纹 + 按 kind 残留少量身份物件（弓/爆弹/炮弹）。
  */
 export function drawRuinedOverlay(view: Phaser.GameObjects.Container): void {
+  const kind = (view.getData('kind') as CampKind | null) ?? 'sword';
   const overlay = view.scene.add.graphics();
   // 黑色半透明蒙层（覆盖营地全部可见区域）
   overlay.fillStyle(0x000000, 0.65);
@@ -47,6 +100,39 @@ export function drawRuinedOverlay(view: Phaser.GameObjects.Container): void {
   overlay.lineBetween(-22, -8, -10, 18);
   overlay.lineBetween(8, -22, 20, 10);
   overlay.lineBetween(-14, 10, 10, -14);
+
+  // 身份残骸：弓兵营留断弓、爆破营留熄灭爆弹、火炮营留弯曲炮管
+  overlay.lineStyle(2, 0x424242, 0.7);
+  switch (kind) {
+    case 'archer':
+      // 断弓：残弧
+      overlay.beginPath();
+      overlay.moveTo(-16, -8);
+      overlay.lineTo(-10, -4);
+      overlay.lineTo(-18, 2);
+      overlay.strokePath();
+      overlay.lineStyle(1, 0xfff176, 0.4);
+      overlay.lineBetween(-16, -8, -10, -4);
+      break;
+    case 'bomb':
+      // 熄灭爆弹：黑灰圆
+      overlay.fillStyle(0x2e2e2e, 0.85);
+      overlay.fillCircle(12, 0, 8);
+      overlay.lineStyle(1.5, 0x616161, 0.7);
+      overlay.strokeCircle(12, 0, 8);
+      break;
+    case 'artillery':
+      // 弯曲炮管：斜插的管子
+      overlay.fillStyle(0x424242, 0.85);
+      overlay.fillRect(-2, -18, 6, 22);
+      overlay.lineStyle(1.5, 0x616161, 0.7);
+      overlay.strokeRect(-2, -18, 6, 22);
+      overlay.fillStyle(0x1a1a1a, 0.9);
+      overlay.fillCircle(1, -18, 3);
+      break;
+    default:
+      break;
+  }
   view.add(overlay);
 }
 

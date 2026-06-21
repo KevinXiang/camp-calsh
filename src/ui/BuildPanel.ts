@@ -2,6 +2,7 @@ import type { CampKind, Faction } from '../game/types';
 import type { GameState } from '../game/GameState';
 import type { UiBridge } from './UiBridge';
 import { MathQuizModal } from './MathQuizModal';
+import { CAMP_ROLE_DEFS, TIER_LABEL } from '../config/campRoles';
 
 const KINDS: { key: CampKind; label: string; icon: string; gated?: boolean }[] = [
   { key: 'sword', label: '剑兵营', icon: '⚔️' },
@@ -62,9 +63,16 @@ export class BuildPanel {
     root.append(title);
 
     for (const k of KINDS) {
+      const role = CAMP_ROLE_DEFS[k.key];
       const b = document.createElement('button');
-      b.className = 'camp-btn';
-      b.innerHTML = `<span class="icon">${k.icon}</span>${k.label}`;
+      b.className = `camp-btn tier-${role.tier}`;
+      b.innerHTML =
+        `<span class="icon">${k.icon}</span>` +
+        `<span class="camp-label">` +
+          `<span class="camp-name">${k.label}</span>` +
+          `<span class="camp-slogan">${role.slogan}</span>` +
+        `</span>` +
+        `<span class="camp-tier-tag">${TIER_LABEL[role.tier]}</span>`;
       b.draggable = true;
 
       b.addEventListener('dragstart', async (e) => {

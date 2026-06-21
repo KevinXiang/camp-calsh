@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GameState } from './GameState';
 import { SimulationClock } from './SimulationClock';
-import { drawCamp, drawRuinedOverlay } from './campRenderer';
+import { drawCamp, drawRuinedOverlay, drawDamageOverlay } from './campRenderer';
 import { drawUnit, updateUnitView, maybeTriggerAttackAnim, triggerHitFlash } from './unitRenderer';
 import { EffectManager } from './effects/EffectManager';
 import { PlacementController } from './managers/PlacementController';
@@ -12,6 +12,7 @@ import { CombatSystem } from './managers/CombatSystem';
 import { drawProjectile, updateProjectileView } from './projectileRenderer';
 import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
+import { classifyZoom, shouldDispatchEvent, shouldShowUnitHpBar, type ZoomTier } from './lodPolicy';
 import type { UiBridge } from '../ui/UiBridge';
 
 export class BattleScene extends Phaser.Scene {
@@ -19,6 +20,8 @@ export class BattleScene extends Phaser.Scene {
   private isPanning = false;
   readonly MIN_ZOOM = 0.3;
   readonly MAX_ZOOM = 2.5;
+  private currentLod: ZoomTier = 'near';
+  private lodFrameCounter = 0;
 
   private gameState = new GameState();
   private clock = new SimulationClock();
@@ -103,6 +106,9 @@ export class BattleScene extends Phaser.Scene {
     this.ground.tilePositionX = cam.scrollX;
     this.ground.tilePositionY = cam.scrollY;
 
+    // 按缩放刷新 LOD 层级（近/中/远）
+    this.currentLod = classifyZoom(cam.zoom);
+
     // 解锁倒计时：自然时间（不受倍速影响），仅 sim.running 时流逝（暂停冻结）
     if (this.gameState.sim.running && this.gameState.sim.unlockTimer > 0) {
       this.gameState.sim.unlockTimer = Math.max(0, this.gameState.sim.unlockTimer - deltaMs / 1000);
@@ -119,13 +125,18 @@ export class BattleScene extends Phaser.Scene {
 
     // 排干事件队列 → 派发到特效层 + 受击闪白
     if (this.gameState.events.length > 0) {
+      this.lodFrameCounter++;
+      // 受击闪白：同样按 LOD 过滤（远景/中景抽样），避免全部小兵同时闪
       for (const ev of this.gameState.events) {
         if (ev.kind === 'meleeHit' || ev.kind === 'arrowHit' || ev.kind === 'javelinHit' || ev.kind === 'shieldBlock' || ev.kind === 'bombHit') {
+          if (!shouldDispatchEvent(ev.kind, this.currentLod, this.lodFrameCounter)) continue;
           const v = this.unitViews.get(ev.unitId);
           if (v) triggerHitFlash(v);
         }
       }
-      this.effects.dispatch(this.gameState.events);
+      // 特效 dispatch：按 LOD 过滤轻反馈
+      const visible = this.gameState.events.filter(ev => shouldDispatchEvent(ev.kind, this.currentLod, this.lodFrameCounter));
+      this.effects.dispatch(visible);
       this.gameState.events.length = 0;
     }
 
@@ -177,6 +188,12 @@ export class BattleScene extends Phaser.Scene {
         hpFill.setFillStyle(c);
       }
 
+      // 受损阶段叠加（轻裂纹 / 重裂纹 + 烟点），仅未摧毁时刷新
+      if (!camp.destroyed) {
+        const ratio = Math.max(0, camp.hp / camp.maxHp);
+        drawDamageOverlay(view, camp.kind, ratio);
+      }
+
       // 摧毁状态切换（仅第一次触发）
       if (camp.destroyed && view.getData('ruined') !== true) {
         drawRuinedOverlay(view);
@@ -191,12 +208,18 @@ export class BattleScene extends Phaser.Scene {
 
   private syncUnitViews(): void {
     const seen = new Set<string>();
+    const showHp = shouldShowUnitHpBar(this.currentLod);
     for (const u of this.gameState.allUnits()) {
       seen.add(u.id);
       let view = this.unitViews.get(u.id);
       if (!view) { view = drawUnit(this, u); this.unitViews.set(u.id, view); }
       updateUnitView(view, u);
       maybeTriggerAttackAnim(view, u);
+      // 血条 child[1]=bg, child[2]=fill：按 LOD 控制可见
+      const hpBg = view.getAt(1) as Phaser.GameObjects.Rectangle | undefined;
+      const hpFill = view.getAt(2) as Phaser.GameObjects.Rectangle | undefined;
+      if (hpBg) hpBg.setVisible(showHp);
+      if (hpFill) hpFill.setVisible(showHp);
     }
     for (const [id, view] of this.unitViews) {
       if (!seen.has(id)) { view.destroy(); this.unitViews.delete(id); }
