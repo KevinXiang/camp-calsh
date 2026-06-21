@@ -96,13 +96,14 @@ export interface SideStats {
 }
 
 /**
- * 军营角色元数据。bestAgainst/weakAgainst 也供规则型 AI 决策使用；
- * 其余角色文案主要用于 UI/设计表达，不进入战斗模拟。
+ * 军营角色元数据。role 供规则型 AI 的阵容/aoe 评分使用，
+ * bestAgainst/weakAgainst 供其克制评分使用；
+ * slogan/strengths/weaknesses/tier 等仍主要用于 UI/设计表达，不进入战斗模拟。
  */
 export interface CampRoleDef {
   /** 一句话定位 */
   slogan: string;
-  /** 战场角色类别 */
+  /** 战场角色类别，供 UI 与规则型 AI 的阵容/aoe 评分使用 */
   role: 'frontline' | 'tank' | 'sustain-ranged' | 'assassin-ranged' | 'aoe-ranged' | 'support' | 'siege';
   /** 主要优势 */
   strengths: string[];

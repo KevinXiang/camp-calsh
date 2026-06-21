@@ -1,8 +1,9 @@
 import type { CampKind, CampRoleDef } from '../game/types';
 
 /**
- * 军营角色元数据。bestAgainst/weakAgainst 也供规则型 AI 决策使用；
- * 其余角色文案主要用于 UI/设计表达，不进入战斗模拟。
+ * 军营角色元数据。role 供规则型 AI 的阵容/aoe 评分使用，
+ * bestAgainst/weakAgainst 供其克制评分使用；
+ * slogan/strengths/weaknesses/tier 等仍主要用于 UI/设计表达，不进入战斗模拟。
  * 每个军营定义一句话定位、战场职责、克制关系、层级标签。
  */
 export const CAMP_ROLE_DEFS: Record<CampKind, CampRoleDef> = {
