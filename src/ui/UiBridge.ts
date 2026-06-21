@@ -6,7 +6,7 @@ export interface PlacementSelection {
   kind: CampKind | null;
 }
 
-type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged' | 'gameOver';
+type EventName = 'placementChanged' | 'selectionChanged' | 'simChanged' | 'statsChanged' | 'gameOver' | 'hoverChanged';
 
 export class UiBridge {
   private listeners: Record<EventName, Set<() => void>> = {
@@ -15,10 +15,12 @@ export class UiBridge {
     simChanged: new Set(),
     statsChanged: new Set(),
     gameOver: new Set(),
+    hoverChanged: new Set(),
   };
   private selection: PlacementSelection = { faction: 'red', kind: null };
   private selectedCampId: string | null = null;
   private gameOverFaction: Faction | null = null;
+  private hoveredKind: CampKind | null = null;
 
   getSelection(): PlacementSelection {
     return this.selection;
@@ -36,6 +38,16 @@ export class UiBridge {
 
   getSelectedCampId(): string | null {
     return this.selectedCampId;
+  }
+
+  getHoveredCampKind(): CampKind | null {
+    return this.hoveredKind;
+  }
+
+  hoverCamp(kind: CampKind | null): void {
+    if (this.hoveredKind === kind) return;
+    this.hoveredKind = kind;
+    this.emit('hoverChanged');
   }
 
   selectCamp(id: string | null): void {

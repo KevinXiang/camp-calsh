@@ -128,44 +128,64 @@ function drawShieldCamp(g: Phaser.GameObjects.Graphics, color: number, accent: n
   g.fillCircle(0, -32, 4);
 }
 
-/** 弓营：高瘦尖塔（44x62） + 三角顶 + 窄箭口 + 顶部箭羽饰 */
+/** 弓营：木制箭塔（石基座 + 双层木平台 + 张开的大弓标志） */
 function drawArcherCamp(g: Phaser.GameObjects.Graphics, color: number, accent: number): void {
+  // 落影
   g.fillStyle(0x000000, 0.2);
-  g.fillEllipse(0, 44, 64, 22);
+  g.fillEllipse(0, 44, 80, 24);
 
-  // 主体（高瘦）
+  // 石基座（阵营色，承接底部稳重感）
   g.fillStyle(color, 1);
-  g.fillRoundedRect(-22, -30, 44, 62, 3);
+  g.fillRoundedRect(-26, 6, 52, 32, 3);
   g.lineStyle(2, 0x000000, 0.25);
-  g.strokeRoundedRect(-22, -30, 44, 62, 3);
+  g.strokeRoundedRect(-26, 6, 52, 32, 3);
 
-  // 三角尖顶
-  g.fillStyle(color, 1);
-  g.fillTriangle(-22, -30, 22, -30, 0, -58);
-  g.lineStyle(2, 0x000000, 0.25);
-  g.strokeTriangle(-22, -30, 22, -30, 0, -58);
+  // 下层木平台：宽，3 道竖向木纹
+  g.fillStyle(0x8d6e63, 1);
+  g.fillRoundedRect(-30, -8, 60, 16, 2);
+  g.lineStyle(2, 0x000000, 0.3);
+  g.strokeRoundedRect(-30, -8, 60, 16, 2);
+  g.lineStyle(1.5, 0x5d4037, 0.8);
+  g.lineBetween(-20, -8, -20, 8);
+  g.lineBetween(0, -8, 0, 8);
+  g.lineBetween(20, -8, 20, 8);
 
-  // 装饰条
-  g.fillStyle(accent, 0.8);
-  g.fillRect(-20, 8, 40, 5);
+  // 上层木平台：略窄，2 道木纹
+  g.fillStyle(0x8d6e63, 1);
+  g.fillRoundedRect(-26, -30, 52, 16, 2);
+  g.lineStyle(2, 0x000000, 0.3);
+  g.strokeRoundedRect(-26, -30, 52, 16, 2);
+  g.lineStyle(1.5, 0x5d4037, 0.8);
+  g.lineBetween(-15, -30, -15, -14);
+  g.lineBetween(15, -30, 15, -14);
 
-  // 窄箭口
-  g.fillStyle(0x000000, 0.5);
-  g.fillRoundedRect(-3, -20, 6, 14, 1);
-
-  // 门洞（窄）
-  g.fillStyle(0x000000, 0.35);
-  g.fillRoundedRect(-7, 6, 14, 26, 2);
-  g.lineStyle(2, accent, 0.6);
-  g.strokeRoundedRect(-7, 6, 14, 26, 2);
-
-  // 顶部箭羽饰
+  // 两层间支柱
   g.lineStyle(2, 0x5d4037, 1);
-  g.lineBetween(0, -72, 0, -58);
+  g.lineBetween(-22, -14, -22, -8);
+  g.lineBetween(22, -14, 22, -8);
+
+  // 门洞
+  g.fillStyle(0x000000, 0.4);
+  g.fillRoundedRect(-8, 14, 16, 24, 2);
+
+  // 顶部大弓标志（accent 营徽）：反曲线弓身 + 横弦 + 搭箭
+  // 弓身（反曲线）
+  g.lineStyle(2.5, accent, 1);
+  g.beginPath();
+  g.moveTo(-14, -48);
+  g.lineTo(-10, -56);
+  g.lineTo(0, -57);
+  g.lineTo(10, -56);
+  g.lineTo(14, -48);
+  g.strokePath();
+  // 横弦
+  g.lineStyle(1.2, 0xfff176, 1);
+  g.lineBetween(-14, -48, 14, -48);
+  // 搭箭
+  g.lineStyle(2, accent, 1);
+  g.lineBetween(0, -57, 0, -46);
   g.fillStyle(accent, 1);
-  g.fillTriangle(0, -74, -5, -68, 5, -68);
-  g.lineStyle(1, 0xffffff, 1);
-  g.lineBetween(-3, -70, 3, -70);
+  g.fillTriangle(0, -46, -2, -51, 2, -51);
 }
 
 /** 投矛营：斜顶塔（60x50 主体 + 梯形顶） + 斜纹装饰 + 三叉戟顶饰 */

@@ -79,24 +79,34 @@ function drawWeapon(g: Phaser.GameObjects.Graphics, kind: UnitKind, color: numbe
       break;
     }
     case 'archer': {
+      // 左手前伸持弓、右手拉弦到脸（形成拉弓蓄势姿态）
       g.lineStyle(BODY_W - 0.3, color, 1);
-      g.lineBetween(0, -5, -3, 0);
-      g.lineBetween(0, -5, -3, 6);
-      g.lineStyle(2.5, 0x66bb6a, 1);
-      const bx = -8, by = -4;
+      g.lineBetween(0, -5, -10, -3);   // 左臂前伸
+      g.lineBetween(0, -5, 4, -10);    // 右臂拉弦到脸
+
+      // 反曲弓身（带反曲线：上下端各一个反向小弯）
+      g.lineStyle(2.8, 0x8d6e63, 1);
       g.beginPath();
-      g.moveTo(bx, by);
-      for (let i = 0; i <= 10; i++) {
-        const t = i / 10;
-        const px = bx + Math.sin(t * Math.PI) * 5;
-        const py = by + t * 16;
-        g.lineTo(px, py);
-      }
+      g.moveTo(-12, -6);
+      g.lineTo(-18, -3);
+      g.lineTo(-13, 2);
+      g.lineTo(-8, 6);
+      g.lineTo(-14, 12);
       g.strokePath();
-      g.lineStyle(2.5, 0xffd54f, 1);
-      g.lineBetween(-8, 6, 9, 6);
-      g.fillStyle(0xff7043, 1);
-      g.fillTriangle(9, 6, 5, 3, 5, 9);
+      // 弓把
+      g.fillStyle(0x5d4037, 1);
+      g.fillRect(-15, 0, 3, 5);
+
+      // 弦：两条线从弓两端汇聚到右脸拉弦点 (4,-10)
+      g.lineStyle(1.2, 0xfff176, 1);
+      g.lineBetween(-13, -6, 4, -10);
+      g.lineBetween(-14, 12, 4, -10);
+
+      // 蓄势搭箭：黄色箭杆沿弦方向 + 小箭头
+      g.lineStyle(2, 0xffd54f, 1);
+      g.lineBetween(-14, 3, 6, -8);
+      g.fillStyle(0xffd54f, 1);
+      g.fillTriangle(6, -8, 2, -10, 2, -5);
       break;
     }
     case 'javelin': {
@@ -331,15 +341,46 @@ function playBashAnim(body: Phaser.GameObjects.Container): void {
   });
 }
 
-/** 弓兵射箭：body 短促后缩（模拟拉弦回收） */
+/** 弓兵射箭：蓄势 150ms（后仰）→ 出手 150ms（前甩 + 出手爆闪）→ 回正 150ms */
 function playBowAnim(body: Phaser.GameObjects.Container): void {
+  // 段 1：蓄势（后仰 ≈14°、轻微下压）
   body.scene.tweens.add({
     targets: body,
-    x: { from: 0, to: -3 },
+    rotation: 0.25,
+    y: -2,
+    duration: 150,
+    ease: 'Cubic.easeOut',
+  });
+  // 段 2：出手（快速前甩到 ≈-9°），同步触发出手爆闪
+  body.scene.tweens.add({
+    targets: body,
+    rotation: -0.15,
     y: 0,
-    duration: 100,
-    yoyo: true,
-    ease: 'Quad.easeOut',
+    duration: 150,
+    ease: 'Cubic.easeIn',
+    delay: 150,
+    onStart: () => {
+      // 出手爆闪：黄色光点叠层，150ms 淡出（不作为独立 CombatEvent，不占 EffectBudget）
+      const flash = body.scene.add.graphics();
+      flash.fillStyle(0xfff176, 0.6);
+      flash.fillCircle(0, -10, 8);
+      body.add(flash);
+      body.scene.tweens.add({
+        targets: flash,
+        alpha: { from: 0.6, to: 0 },
+        duration: 150,
+        onComplete: () => flash.destroy(),
+      });
+    },
+  });
+  // 段 3：归零
+  body.scene.tweens.add({
+    targets: body,
+    rotation: 0,
+    y: 0,
+    duration: 150,
+    ease: 'Sine.easeOut',
+    delay: 300,
   });
 }
 

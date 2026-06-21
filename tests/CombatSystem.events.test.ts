@@ -81,11 +81,16 @@ describe('CombatSystem events', () => {
     expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
   });
 
-  it('远程命中且 weaponKind=arrow 仍发射 meleeHit（沿用现状）', () => {
+  it('远程命中且 weaponKind=arrow 发射 arrowHit 事件（带坐标与阵营）', () => {
     const u = mkUnit({ x: 5, y: 5 });
     const gs = mkGS({ units: new Map([[u.id, u]]) });
     CombatSystem.applyDamage(u, 10, gs, { source: 'ranged', weaponKind: 'arrow' });
-    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(true);
+    const e = gs.events.find(ev => ev.kind === 'arrowHit') as Extract<CombatEvent, { kind: 'arrowHit' }>;
+    expect(e).toBeDefined();
+    expect(e.x).toBe(5);
+    expect(e.y).toBe(5);
+    expect(e.faction).toBe('red');
+    expect(gs.events.some(ev => ev.kind === 'meleeHit')).toBe(false);
     expect(gs.events.some(ev => ev.kind === 'javelinHit')).toBe(false);
   });
 

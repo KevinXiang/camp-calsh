@@ -33,6 +33,7 @@ export class EffectManager {
     for (const ev of events) {
       switch (ev.kind) {
         case 'meleeHit':      this.spawnMeleeStars(ev.x, ev.y); break;
+        case 'arrowHit':      this.spawnArrowHit(ev.x, ev.y); break;
         case 'javelinHit':    this.spawnJavelinHit(ev.x, ev.y); break;
         case 'shieldBlock':   this.spawnShieldSpark(ev.x, ev.y); break;
         case 'healHit':       this.spawnHealHit(ev.x, ev.y); break;
@@ -111,6 +112,55 @@ export class EffectManager {
     }
 
     this.scene.time.delayedCall(750, () => {
+      root.destroy();
+      this.budget.release();
+    });
+  }
+
+  /** 弓箭命中：扎入箭头（旋转扎入姿态）+ 4 颗 ✦ 向四周弹散（0.7s 生命） */
+  private spawnArrowHit(x: number, y: number): void {
+    if (!this.budget.tryAdd()) return;
+    const root = this.scene.add.container(x, y);
+
+    // 扎入箭头：木杆 + 箭羽，旋转约 15° 扎入姿态，150ms 淡出
+    const arrow = this.scene.add.graphics();
+    arrow.rotation = 0.26;  // ≈15°
+    arrow.lineStyle(2, 0x8d6e63, 1);             // 木杆
+    arrow.lineBetween(-12, 0, 4, 0);
+    arrow.fillStyle(0xff7043, 1);                // 箭头（已没入，露小段）
+    arrow.fillTriangle(4, 0, 1, -1.5, 1, 1.5);
+    arrow.fillStyle(0xfff176, 1);                // 箭羽两片
+    arrow.fillTriangle(-12, 0, -16, -2.5, -12, -1);
+    arrow.fillTriangle(-12, 0, -16, 2.5, -12, 1);
+    root.add(arrow);
+    this.scene.tweens.add({
+      targets: arrow,
+      alpha: { from: 1, to: 0 },
+      duration: 150,
+      ease: 'Cubic.easeOut',
+    });
+
+    // 4 颗 ✦ 向四周弹散（复用 spawnMeleeStars 风格）
+    const N = 4;
+    for (let i = 0; i < N; i++) {
+      const angle = (i / N) * Math.PI * 2 + (i * 0.37);
+      const dist = 16 + (i * 0.21) * 8;
+      const star = this.scene.add.text(0, 0, '✦', {
+        fontSize: '14px', color: '#fff176', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      root.add(star);
+      this.scene.tweens.add({
+        targets: star,
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        scale: { from: 0.4, to: 1.4 },
+        alpha: { from: 1, to: 0 },
+        duration: 600,
+        ease: 'Cubic.easeOut',
+      });
+    }
+
+    this.scene.time.delayedCall(700, () => {
       root.destroy();
       this.budget.release();
     });

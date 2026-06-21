@@ -20,6 +20,9 @@ const HOTKEY_MAP: Record<string, CampKind> = { q: 'sword', w: 'shield', e: 'arch
 const SPAWN_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
 const DEFAULT_STEP_INDEX = SPAWN_STEPS.indexOf(1);
 
+// 面板按钮悬停多久后弹出属性提示框（与战场上军营的悬停延时保持一致）
+const HOVER_DELAY_MS = 2000;
+
 interface SpawnSliderRefs {
   input: HTMLInputElement;
   label: HTMLSpanElement;
@@ -30,6 +33,7 @@ export class BuildPanel {
   private rightButtons = new Map<CampKind, HTMLButtonElement>();
   private spawnSliders: Record<Faction, SpawnSliderRefs | null> = { red: null, blue: null };
   private modal = new MathQuizModal();
+  private hoverTimer: number | null = null;
 
   constructor(private bridge: UiBridge, private gs: () => GameState) {
     this.createPanel('red', 'left', this.leftButtons);
@@ -38,6 +42,13 @@ export class BuildPanel {
     bridge.on('placementChanged', () => this.render());
     bridge.on('simChanged', () => { this.syncSliders(); this.render(); });
     this.render();
+  }
+
+  private clearHoverTimer(): void {
+    if (this.hoverTimer !== null) {
+      clearTimeout(this.hoverTimer);
+      this.hoverTimer = null;
+    }
   }
 
   private createPanel(faction: Faction, side: 'left' | 'right', store: Map<CampKind, HTMLButtonElement>): void {
@@ -80,6 +91,18 @@ export class BuildPanel {
         this.bridge.selectFaction(faction);
         this.bridge.selectCampKind(k.key);
       };
+
+      // 悬停 2 秒：弹出该军营/兵种的属性提示框（复用 CampTooltip）
+      b.addEventListener('mouseenter', () => {
+        this.clearHoverTimer();
+        this.hoverTimer = window.setTimeout(() => {
+          this.bridge.hoverCamp(k.key);
+        }, HOVER_DELAY_MS);
+      });
+      b.addEventListener('mouseleave', () => {
+        this.clearHoverTimer();
+        this.bridge.hoverCamp(null);
+      });
 
       root.append(b);
       store.set(k.key, b);
