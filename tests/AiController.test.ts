@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AI_BATTLE } from '../src/config/aiBattle';
 import { AiController } from '../src/game/ai/AiController';
 import { GameState } from '../src/game/GameState';
@@ -14,7 +14,7 @@ function setup(random: () => number = () => 0.5) {
   let nextId = 1;
   const placement = new CampPlacementService(gs, () => `ai-${nextId++}`);
   const ai = new AiController(gs, placement, random);
-  return { gs, ai };
+  return { gs, ai, placement };
 }
 
 function addCamp(
@@ -64,6 +64,21 @@ describe('AiController', () => {
     expect(ai.deployInitialCamp()).toBe(false);
     expect(gs.ai.decisionCooldown).toBe(1);
     expect(gs.camps.size).toBe(0);
+  });
+
+  it('does not deploy or decide in sandbox mode', () => {
+    const gs = new GameState();
+    gs.sim.running = true;
+    gs.economy.resources.blue = 500;
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    const placement = new CampPlacementService(gs, () => 'blue-1');
+    const ai = new AiController(gs, placement, () => 0.5);
+    const beforeResources = { ...gs.economy.resources };
+
+    expect(ai.deployInitialCamp()).toBe(false);
+    expect(ai.step(10, false)).toBe(false);
+    expect(gs.allCamps()).toHaveLength(1);
+    expect(gs.economy.resources).toEqual(beforeResources);
   });
 
   it('can deploy its initial camp while simulation is paused', () => {
@@ -207,6 +222,75 @@ describe('AiController', () => {
     expect({ x: firstBlue?.x, y: firstBlue?.y }).toEqual({
       x: secondBlue?.x,
       y: secondBlue?.y,
+    });
+  });
+
+  it('validates exactly candidateCount candidates within the blue bounds', () => {
+    const { gs, ai, placement } = setup(() => 0.5);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    const validate = vi.spyOn(placement, 'validate').mockReturnValue(null);
+    vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    ai.deployInitialCamp();
+
+    expect(validate).toHaveBeenCalledTimes(AI_BATTLE.candidateCount);
+    const battlefield = AI_BATTLE.battlefield;
+    for (const [request] of validate.mock.calls) {
+      expect(request.x).toBeGreaterThanOrEqual(
+        battlefield.midX + battlefield.edgeMargin,
+      );
+      expect(request.x).toBeLessThanOrEqual(
+        battlefield.maxX - battlefield.edgeMargin,
+      );
+      expect(request.y).toBeGreaterThanOrEqual(
+        battlefield.minY + battlefield.edgeMargin,
+      );
+      expect(request.y).toBeLessThanOrEqual(
+        battlefield.maxY - battlefield.edgeMargin,
+      );
+    }
+  });
+
+  it('can choose a non-first candidate from the scored top three', () => {
+    const battlefield = AI_BATTLE.battlefield;
+    const minX = battlefield.midX + battlefield.edgeMargin;
+    const maxX = battlefield.maxX - battlefield.edgeMargin;
+    const minY = battlefield.minY + battlefield.edgeMargin;
+    const maxY = battlefield.maxY - battlefield.edgeMargin;
+    const candidates = [
+      { x: 960, y: 200 },
+      { x: 970, y: 300 },
+      { x: 950, y: 400 },
+      ...Array.from(
+        { length: AI_BATTLE.candidateCount - 3 },
+        (_, index) => ({ x: 1300, y: 100 + index * 10 }),
+      ),
+    ];
+    const values = candidates.flatMap(candidate => [
+      (candidate.x - minX) / (maxX - minX),
+      (candidate.y - minY) / (maxY - minY),
+    ]);
+    values.push(0.5);
+    let randomIndex = 0;
+    const { gs, ai, placement } = setup(() => values[randomIndex++] ?? 0);
+    addCamp(gs, 'red-1', 'red', 'sword', 300, 300);
+    vi.spyOn(placement, 'validate').mockReturnValue(null);
+    const place = vi.spyOn(placement, 'place').mockReturnValue({
+      ok: false,
+      reason: 'tooClose',
+    });
+
+    ai.deployInitialCamp();
+
+    expect(place).toHaveBeenCalledWith({
+      actor: 'ai',
+      faction: 'blue',
+      kind: 'sword',
+      x: 970,
+      y: 300,
     });
   });
 
