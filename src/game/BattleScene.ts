@@ -17,11 +17,13 @@ import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
 import { classifyZoom, shouldDispatchEvent, shouldShowUnitHpBar, type ZoomTier } from './lodPolicy';
 import {
-  economySignature,
+  emitEconomyChangedIfNeeded,
+  handleAiBattleStartup,
   hasLivingCamp,
-  prepareAiBattleStartup,
-  type UiBridge,
-} from '../ui/UiBridge';
+  removeCampByPlayer as removeCampByPlayerWith,
+  runAiBattleStep,
+} from './aiBattleIntegration';
+import type { UiBridge } from '../ui/UiBridge';
 import type { Camp } from './types';
 
 export class BattleScene extends Phaser.Scene {
@@ -137,11 +139,17 @@ export class BattleScene extends Phaser.Scene {
     const dt = this.clock.fixedDt();
     for (let i = 0; i < steps; i++) {
       const gameOver = this.bridge.getGameOver() !== null;
-      EconomySystem.step(this.gameState, dt, gameOver);
-      this.aiController.step(dt, gameOver);
-      this.campManager.step(dt);
-      this.unitManager.step(dt);
-      CombatSystem.step(this.gameState, dt);
+      runAiBattleStep({
+        economy: (stepDt, over) => {
+          EconomySystem.step(this.gameState, stepDt, over);
+        },
+        ai: (stepDt, over) => {
+          this.aiController.step(stepDt, over);
+        },
+        camp: stepDt => this.campManager.step(stepDt),
+        unit: stepDt => this.unitManager.step(stepDt),
+        combat: stepDt => CombatSystem.step(this.gameState, stepDt),
+      }, dt, gameOver);
       this.gameState.sim.timeMs += dt * 1000;
     }
 
@@ -195,15 +203,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private maybeEmitEconomyChanged(): void {
-    const sig = economySignature(this.gameState);
-    if (sig === this.lastEconomySig) return;
-    this.lastEconomySig = sig;
-    this.bridge.emit('economyChanged');
-  }
-
-  private emitEconomyChangedNow(): void {
-    this.lastEconomySig = economySignature(this.gameState);
-    this.bridge.emit('economyChanged');
+    this.lastEconomySig = emitEconomyChangedIfNeeded(
+      this.gameState,
+      this.lastEconomySig,
+      () => this.bridge.emit('economyChanged'),
+    );
   }
 
   private syncCampViews(): void {
@@ -280,21 +284,19 @@ export class BattleScene extends Phaser.Scene {
   onCampPlaced(camp: Camp): void {
     if (this.bridge.getGameOver() !== null) return;
 
-    const startup = camp.faction === 'red'
-      ? prepareAiBattleStartup(
-        this.gameState,
-        () => this.aiController.deployInitialCamp(),
-      )
-      : { attempted: false, started: false, notice: null };
-    if (startup.attempted) {
-      this.bridge.setNotice(startup.notice);
-      this.emitEconomyChangedNow();
-      this.bridge.emit('simChanged');
+    const startupHandled = camp.faction === 'red'
+      && handleAiBattleStartup({
+        gs: this.gameState,
+        deployInitialCamp: () => this.aiController.deployInitialCamp(),
+        setRunning: running => {
+          this.gameState.sim.running = running;
+          this.bridge.emit('simChanged');
+        },
+        setNotice: notice => this.bridge.setNotice(notice),
+      });
+    this.maybeEmitEconomyChanged();
+    if (startupHandled) {
       return;
-    }
-
-    if (this.gameState.mode === 'aiBattle') {
-      this.emitEconomyChangedNow();
     }
 
     if (
@@ -307,27 +309,30 @@ export class BattleScene extends Phaser.Scene {
   }
 
   removeCampByPlayer(id: string): boolean {
-    if (!this.placementService.remove('player', id)) return false;
-    this.lastEconomySig = economySignature(this.gameState);
-    this.refreshViews();
-    return true;
+    return removeCampByPlayerWith({
+      remove: (actor, campId) => this.placementService.remove(actor, campId),
+      refreshViews: () => this.refreshViews(),
+      emitEconomyChanged: () => this.maybeEmitEconomyChanged(),
+    }, id);
   }
 
   private handleModeChanged(): void {
-    this.lastEconomySig = economySignature(this.gameState);
     if (this.gameState.mode === 'sandbox') {
       this.bridge.setNotice(null);
+      this.maybeEmitEconomyChanged();
       return;
     }
 
-    const startup = prepareAiBattleStartup(
-      this.gameState,
-      () => this.aiController.deployInitialCamp(),
-    );
-    if (startup.attempted) {
-      this.bridge.setNotice(startup.notice);
-      if (startup.started) this.emitEconomyChangedNow();
-      this.bridge.emit('simChanged');
+    const startupHandled = handleAiBattleStartup({
+      gs: this.gameState,
+      deployInitialCamp: () => this.aiController.deployInitialCamp(),
+      setRunning: running => {
+        this.gameState.sim.running = running;
+      },
+      setNotice: notice => this.bridge.setNotice(notice),
+    });
+    this.maybeEmitEconomyChanged();
+    if (startupHandled) {
       this.refreshViews();
       return;
     }

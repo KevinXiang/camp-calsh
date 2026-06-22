@@ -2,13 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { AI_BATTLE } from '../src/config/aiBattle';
 import { GameState } from '../src/game/GameState';
 import type { BattleScene } from '../src/game/BattleScene';
+import {
+  economySignature,
+  emitEconomyChangedIfNeeded,
+  handleAiBattleStartup,
+  hasLivingCamp,
+  removeCampByPlayer,
+  runAiBattleStep,
+} from '../src/game/aiBattleIntegration';
 import { CampPlacementService } from '../src/game/managers/CampPlacementService';
 import { PlacementController } from '../src/game/managers/PlacementController';
 import type { GameMode } from '../src/game/types';
 import {
-  economySignature,
-  hasLivingCamp,
-  prepareAiBattleStartup,
   setGameMode,
   UiBridge,
 } from '../src/ui/UiBridge';
@@ -85,49 +90,6 @@ describe('AI battle mode integration helpers', () => {
     expect(hasLivingCamp(gs, 'blue')).toBe(true);
   });
 
-  it('prepares startup deployment for an existing red camp only', () => {
-    const gs = new GameState();
-    setGameMode(gs, 'aiBattle');
-    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
-    const deployInitialCamp = vi.fn(() => true);
-
-    expect(prepareAiBattleStartup(gs, deployInitialCamp)).toEqual({
-      attempted: true,
-      started: true,
-      notice: null,
-    });
-    expect(deployInitialCamp).toHaveBeenCalledOnce();
-    expect(gs.sim.running).toBe(true);
-  });
-
-  it('keeps startup paused and reports a failed initial deployment', () => {
-    const gs = new GameState();
-    setGameMode(gs, 'aiBattle');
-    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
-
-    expect(prepareAiBattleStartup(gs, () => false)).toEqual({
-      attempted: true,
-      started: false,
-      notice: '蓝方建造区没有合法位置，AI 对战暂未开始',
-    });
-    expect(gs.sim.running).toBe(false);
-  });
-
-  it('does not deploy when a living blue camp already exists', () => {
-    const gs = new GameState();
-    setGameMode(gs, 'aiBattle');
-    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
-    gs.addCamp(mkCamp({ id: 'blue-1', faction: 'blue' }));
-    const deployInitialCamp = vi.fn(() => true);
-
-    expect(prepareAiBattleStartup(gs, deployInitialCamp)).toEqual({
-      attempted: false,
-      started: false,
-      notice: null,
-    });
-    expect(deployInitialCamp).not.toHaveBeenCalled();
-  });
-
   it('uses floored resources for the economy signature', () => {
     const gs = new GameState();
     gs.economy.resources = { red: 330.1, blue: 329.9 };
@@ -139,7 +101,7 @@ describe('AI battle mode integration helpers', () => {
 });
 
 describe('UiBridge AI battle integration', () => {
-  it('emits mode, economy, and sim events on first initialization', () => {
+  it('emits mode and sim but leaves economy events to the scene', () => {
     const bridge = new UiBridge();
     const gs = new GameState();
     const changed = {
@@ -154,7 +116,7 @@ describe('UiBridge AI battle integration', () => {
     bridge.setMode('sandbox', gs);
 
     expect(changed.mode).toHaveBeenCalledOnce();
-    expect(changed.economy).toHaveBeenCalledOnce();
+    expect(changed.economy).not.toHaveBeenCalled();
     expect(changed.sim).toHaveBeenCalledOnce();
   });
 
@@ -240,7 +202,7 @@ describe('UiBridge AI battle integration', () => {
     expect(economyChanged).not.toHaveBeenCalled();
   });
 
-  it('clears selection and emits refund events after player deletion succeeds', () => {
+  it('clears selection without bypassing scene economy dedupe after deletion succeeds', () => {
     const bridge = new UiBridge();
     const selectionChanged = vi.fn();
     const economyChanged = vi.fn();
@@ -255,7 +217,7 @@ describe('UiBridge AI battle integration', () => {
 
     expect(bridge.getSelectedCampId()).toBeNull();
     expect(selectionChanged).toHaveBeenCalledOnce();
-    expect(economyChanged).toHaveBeenCalledOnce();
+    expect(economyChanged).not.toHaveBeenCalled();
   });
 
   it.each<GameMode>(['sandbox', 'aiBattle'])(
@@ -273,6 +235,190 @@ describe('UiBridge AI battle integration', () => {
       expect(modeChanged).toHaveBeenCalledOnce();
     },
   );
+});
+
+describe('BattleScene AI battle collaboration', () => {
+  it('runs fixed-step systems in Economy, AI, Camp, Unit, Combat order', () => {
+    const calls: string[] = [];
+
+    runAiBattleStep({
+      economy: () => calls.push('economy'),
+      ai: () => calls.push('ai'),
+      camp: () => calls.push('camp'),
+      unit: () => calls.push('unit'),
+      combat: () => calls.push('combat'),
+    }, 1 / 60, false);
+
+    expect(calls).toEqual(['economy', 'ai', 'camp', 'unit', 'combat']);
+  });
+
+  it('starts after the first red camp deploys a blue camp', () => {
+    const gs = new GameState();
+    setGameMode(gs, 'aiBattle');
+    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
+    const setRunning = vi.fn();
+    const setNotice = vi.fn();
+
+    expect(handleAiBattleStartup({
+      gs,
+      deployInitialCamp: () => true,
+      setRunning,
+      setNotice,
+    })).toBe(true);
+
+    expect(setRunning).toHaveBeenCalledWith(true);
+    expect(setNotice).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps the first red camp startup paused when deployment fails', () => {
+    const gs = new GameState();
+    setGameMode(gs, 'aiBattle');
+    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
+    const setRunning = vi.fn();
+    const setNotice = vi.fn();
+
+    expect(handleAiBattleStartup({
+      gs,
+      deployInitialCamp: () => false,
+      setRunning,
+      setNotice,
+    })).toBe(true);
+
+    expect(setRunning).toHaveBeenCalledWith(false);
+    expect(setNotice).toHaveBeenCalledWith(
+      '蓝方建造区没有合法位置，AI 对战暂未开始',
+    );
+  });
+
+  it.each([
+    ['success', true, null],
+    ['failure', false, '蓝方建造区没有合法位置，AI 对战暂未开始'],
+  ] as const)(
+    'handles existing red camp mode startup %s',
+    (_name, deployed, notice) => {
+      const gs = new GameState();
+      gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
+      setGameMode(gs, 'aiBattle');
+      const setRunning = vi.fn();
+      const setNotice = vi.fn();
+
+      expect(handleAiBattleStartup({
+        gs,
+        deployInitialCamp: () => deployed,
+        setRunning,
+        setNotice,
+      })).toBe(true);
+
+      expect(setRunning).toHaveBeenCalledWith(deployed);
+      expect(setNotice).toHaveBeenCalledWith(notice);
+    },
+  );
+
+  it('does not deploy when a living blue camp already exists', () => {
+    const gs = new GameState();
+    setGameMode(gs, 'aiBattle');
+    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
+    gs.addCamp(mkCamp({ id: 'blue-1', faction: 'blue' }));
+    const deployInitialCamp = vi.fn(() => true);
+
+    expect(handleAiBattleStartup({
+      gs,
+      deployInitialCamp,
+      setRunning: vi.fn(),
+      setNotice: vi.fn(),
+    })).toBe(false);
+    expect(deployInitialCamp).not.toHaveBeenCalled();
+  });
+
+  it('emits the initial AI economy once and dedupes an unchanged signature', () => {
+    const gs = new GameState();
+    setGameMode(gs, 'aiBattle');
+    const emit = vi.fn();
+
+    const first = emitEconomyChangedIfNeeded(gs, '', emit);
+    const second = emitEconomyChangedIfNeeded(gs, first, emit);
+
+    expect(first).toBe('330|330');
+    expect(second).toBe(first);
+    expect(emit).toHaveBeenCalledOnce();
+  });
+
+  it('emits once after startup spending and not again for the same balance', () => {
+    const gs = new GameState();
+    setGameMode(gs, 'aiBattle');
+    let signature = emitEconomyChangedIfNeeded(gs, '', vi.fn());
+    const emit = vi.fn();
+    gs.economy.resources.blue -= AI_BATTLE.prices.sword;
+
+    signature = emitEconomyChangedIfNeeded(gs, signature, emit);
+    signature = emitEconomyChangedIfNeeded(gs, signature, emit);
+
+    expect(signature).toBe('330|230');
+    expect(emit).toHaveBeenCalledOnce();
+  });
+
+  it('emits one economy event when mode startup succeeds', () => {
+    const gs = new GameState();
+    gs.addCamp(mkCamp({ id: 'red-1', faction: 'red' }));
+    const bridge = new UiBridge();
+    const economyChanged = vi.fn();
+    let signature = '';
+    bridge.on('economyChanged', economyChanged);
+    bridge.on('modeChanged', () => {
+      handleAiBattleStartup({
+        gs,
+        deployInitialCamp: () => {
+          gs.economy.resources.blue -= AI_BATTLE.prices.sword;
+          return true;
+        },
+        setRunning: running => {
+          gs.sim.running = running;
+        },
+        setNotice: vi.fn(),
+      });
+      signature = emitEconomyChangedIfNeeded(
+        gs,
+        signature,
+        () => bridge.emit('economyChanged'),
+      );
+    });
+
+    bridge.setMode('aiBattle', gs);
+
+    expect(signature).toBe('330|230');
+    expect(economyChanged).toHaveBeenCalledOnce();
+  });
+
+  it('delegates successful player removal, refreshes, and emits through economy path', () => {
+    const remove = vi.fn(() => true);
+    const refreshViews = vi.fn();
+    const emitEconomyChanged = vi.fn();
+
+    expect(removeCampByPlayer({
+      remove,
+      refreshViews,
+      emitEconomyChanged,
+    }, 'red-1')).toBe(true);
+
+    expect(remove).toHaveBeenCalledWith('player', 'red-1');
+    expect(refreshViews).toHaveBeenCalledOnce();
+    expect(emitEconomyChanged).toHaveBeenCalledOnce();
+  });
+
+  it('does not refresh or emit when player removal fails', () => {
+    const remove = vi.fn(() => false);
+    const refreshViews = vi.fn();
+    const emitEconomyChanged = vi.fn();
+
+    expect(removeCampByPlayer({
+      remove,
+      refreshViews,
+      emitEconomyChanged,
+    }, 'blue-1')).toBe(false);
+
+    expect(refreshViews).not.toHaveBeenCalled();
+    expect(emitEconomyChanged).not.toHaveBeenCalled();
+  });
 });
 
 describe('PlacementController AI battle integration', () => {

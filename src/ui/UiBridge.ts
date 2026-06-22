@@ -19,52 +19,12 @@ type EventName =
   | 'economyChanged'
   | 'noticeChanged';
 
-export const AI_STARTUP_FAILURE_NOTICE =
-  '蓝方建造区没有合法位置，AI 对战暂未开始';
-
 export function setGameMode(gs: GameState, mode: GameMode): void {
   if (mode === 'aiBattle') {
     EconomySystem.enterAiBattle(gs);
     return;
   }
   gs.mode = 'sandbox';
-}
-
-export function hasLivingCamp(gs: GameState, faction: Faction): boolean {
-  return gs.allCamps().some(
-    camp => camp.faction === faction && !camp.destroyed,
-  );
-}
-
-export function economySignature(gs: GameState): string {
-  return `${Math.floor(gs.economy.resources.red)}|${Math.floor(gs.economy.resources.blue)}`;
-}
-
-export interface AiBattleStartupResult {
-  attempted: boolean;
-  started: boolean;
-  notice: string | null;
-}
-
-export function prepareAiBattleStartup(
-  gs: GameState,
-  deployInitialCamp: () => boolean,
-): AiBattleStartupResult {
-  if (
-    gs.mode !== 'aiBattle'
-    || !hasLivingCamp(gs, 'red')
-    || hasLivingCamp(gs, 'blue')
-  ) {
-    return { attempted: false, started: false, notice: null };
-  }
-
-  const started = deployInitialCamp();
-  gs.sim.running = started;
-  return {
-    attempted: true,
-    started,
-    notice: started ? null : AI_STARTUP_FAILURE_NOTICE,
-  };
 }
 
 export class UiBridge {
@@ -138,7 +98,6 @@ export class UiBridge {
     if (!scene.removeCampByPlayer(this.selectedCampId)) return;
     this.selectedCampId = null;
     this.emit('selectionChanged');
-    this.emit('economyChanged');
   }
 
   setMode(mode: GameMode, gs: GameState): void {
@@ -159,7 +118,6 @@ export class UiBridge {
     }
 
     this.emit('modeChanged');
-    this.emit('economyChanged');
     this.emit('simChanged');
   }
 
