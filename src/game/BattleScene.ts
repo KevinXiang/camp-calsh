@@ -17,10 +17,12 @@ import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
 import { classifyZoom, shouldDispatchEvent, shouldShowUnitHpBar, type ZoomTier } from './lodPolicy';
 import {
+  clearStartupNoticeAfterAiBuild,
   emitEconomyChangedIfNeeded,
   handleAiBattleStartup,
   hasLivingCamp,
   removeCampByPlayer as removeCampByPlayerWith,
+  runAiBattleBatch,
   runAiBattleStep,
 } from './aiBattleIntegration';
 import type { UiBridge } from '../ui/UiBridge';
@@ -137,21 +139,29 @@ export class BattleScene extends Phaser.Scene {
 
     const steps = this.clock.consume(deltaMs, this.gameState.sim.running, this.gameState.sim.speed);
     const dt = this.clock.fixedDt();
-    for (let i = 0; i < steps; i++) {
-      const gameOver = this.bridge.getGameOver() !== null;
-      runAiBattleStep({
-        economy: (stepDt, over) => {
-          EconomySystem.step(this.gameState, stepDt, over);
-        },
-        ai: (stepDt, over) => {
-          this.aiController.step(stepDt, over);
-        },
-        camp: stepDt => this.campManager.step(stepDt),
-        unit: stepDt => this.unitManager.step(stepDt),
-        combat: stepDt => CombatSystem.step(this.gameState, stepDt),
-      }, dt, gameOver);
-      this.gameState.sim.timeMs += dt * 1000;
-    }
+    runAiBattleBatch(
+      steps,
+      () => {
+        const gameOver = this.bridge.getGameOver() !== null;
+        const built = runAiBattleStep({
+          economy: (stepDt, over) => {
+            EconomySystem.step(this.gameState, stepDt, over);
+          },
+          ai: (stepDt, over) => this.aiController.step(stepDt, over),
+          camp: stepDt => this.campManager.step(stepDt),
+          unit: stepDt => this.unitManager.step(stepDt),
+          combat: stepDt => CombatSystem.step(this.gameState, stepDt),
+        }, dt, gameOver);
+        clearStartupNoticeAfterAiBuild(
+          built,
+          this.bridge.getNotice(),
+          notice => this.bridge.setNotice(notice),
+        );
+        this.gameState.sim.timeMs += dt * 1000;
+      },
+      () => checkWinner(this.gameState),
+      winner => this.bridge.declareGameOver(winner, this.gameState),
+    );
 
     // 排干事件队列 → 派发到特效层 + 受击闪白
     if (this.gameState.events.length > 0) {

@@ -3,11 +3,14 @@ import { AI_BATTLE } from '../src/config/aiBattle';
 import { GameState } from '../src/game/GameState';
 import type { BattleScene } from '../src/game/BattleScene';
 import {
+  AI_STARTUP_FAILURE_NOTICE,
+  clearStartupNoticeAfterAiBuild,
   economySignature,
   emitEconomyChangedIfNeeded,
   handleAiBattleStartup,
   hasLivingCamp,
   removeCampByPlayer,
+  runAiBattleBatch,
   runAiBattleStep,
 } from '../src/game/aiBattleIntegration';
 import { CampPlacementService } from '../src/game/managers/CampPlacementService';
@@ -243,13 +246,88 @@ describe('BattleScene AI battle collaboration', () => {
 
     runAiBattleStep({
       economy: () => calls.push('economy'),
-      ai: () => calls.push('ai'),
+      ai: () => {
+        calls.push('ai');
+        return false;
+      },
       camp: () => calls.push('camp'),
       unit: () => calls.push('unit'),
       combat: () => calls.push('combat'),
     }, 1 / 60, false);
 
     expect(calls).toEqual(['economy', 'ai', 'camp', 'unit', 'combat']);
+  });
+
+  it('returns whether the AI built during the fixed step', () => {
+    const built = runAiBattleStep({
+      economy: vi.fn(),
+      ai: () => true,
+      camp: vi.fn(),
+      unit: vi.fn(),
+      combat: vi.fn(),
+    }, 1 / 60, false);
+
+    expect(built).toBe(true);
+  });
+
+  it('stops a fixed-step batch immediately after the first winner', () => {
+    const runStep = vi.fn();
+    const checkBatchWinner = vi.fn()
+      .mockReturnValueOnce('red')
+      .mockReturnValue(null);
+    const declareWinner = vi.fn();
+
+    runAiBattleBatch(3, runStep, checkBatchWinner, declareWinner);
+
+    expect(runStep).toHaveBeenCalledOnce();
+    expect(checkBatchWinner).toHaveBeenCalledOnce();
+    expect(declareWinner).toHaveBeenCalledOnce();
+    expect(declareWinner).toHaveBeenCalledWith('red');
+  });
+
+  it('runs every fixed step when no winner is produced', () => {
+    const runStep = vi.fn();
+    const checkBatchWinner = vi.fn(() => null);
+    const declareWinner = vi.fn();
+
+    runAiBattleBatch(3, runStep, checkBatchWinner, declareWinner);
+
+    expect(runStep).toHaveBeenCalledTimes(3);
+    expect(checkBatchWinner).toHaveBeenCalledTimes(3);
+    expect(declareWinner).not.toHaveBeenCalled();
+  });
+
+  it('clears only the startup failure notice after a normal AI build', () => {
+    const setNotice = vi.fn();
+
+    clearStartupNoticeAfterAiBuild(
+      true,
+      AI_STARTUP_FAILURE_NOTICE,
+      setNotice,
+    );
+
+    expect(setNotice).toHaveBeenCalledOnce();
+    expect(setNotice).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps the startup failure notice when AI did not build', () => {
+    const setNotice = vi.fn();
+
+    clearStartupNoticeAfterAiBuild(
+      false,
+      AI_STARTUP_FAILURE_NOTICE,
+      setNotice,
+    );
+
+    expect(setNotice).not.toHaveBeenCalled();
+  });
+
+  it('does not clear unrelated notices after an AI build', () => {
+    const setNotice = vi.fn();
+
+    clearStartupNoticeAfterAiBuild(true, 'future notice', setNotice);
+
+    expect(setNotice).not.toHaveBeenCalled();
   });
 
   it('starts after the first red camp deploys a blue camp', () => {

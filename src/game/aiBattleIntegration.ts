@@ -27,7 +27,7 @@ export function emitEconomyChangedIfNeeded(
 
 export interface AiBattleStepDependencies {
   economy(dt: number, gameOver: boolean): void;
-  ai(dt: number, gameOver: boolean): void;
+  ai(dt: number, gameOver: boolean): boolean;
   camp(dt: number): void;
   unit(dt: number): void;
   combat(dt: number): void;
@@ -37,12 +37,38 @@ export function runAiBattleStep(
   deps: AiBattleStepDependencies,
   dt: number,
   gameOver: boolean,
-): void {
+): boolean {
   deps.economy(dt, gameOver);
-  deps.ai(dt, gameOver);
+  const built = deps.ai(dt, gameOver);
   deps.camp(dt);
   deps.unit(dt);
   deps.combat(dt);
+  return built;
+}
+
+export function runAiBattleBatch<Winner>(
+  steps: number,
+  runStep: () => void,
+  checkWinner: () => Winner | null,
+  declareWinner: (winner: Winner) => void,
+): void {
+  for (let index = 0; index < steps; index++) {
+    runStep();
+    const winner = checkWinner();
+    if (winner === null) continue;
+    declareWinner(winner);
+    break;
+  }
+}
+
+export function clearStartupNoticeAfterAiBuild(
+  built: boolean,
+  currentNotice: string | null,
+  setNotice: (notice: string | null) => void,
+): void {
+  if (built && currentNotice === AI_STARTUP_FAILURE_NOTICE) {
+    setNotice(null);
+  }
 }
 
 export interface AiBattleStartupDependencies {
