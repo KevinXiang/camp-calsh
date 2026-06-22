@@ -15,6 +15,7 @@ import { AiController } from './ai/AiController';
 import { drawProjectile, updateProjectileView } from './projectileRenderer';
 import { checkWinner } from './victory';
 import { SELECTION_COLOR } from '../config/colors';
+import { AI_BATTLE } from '../config/aiBattle';
 import { classifyZoom, shouldDispatchEvent, shouldShowUnitHpBar, type ZoomTier } from './lodPolicy';
 import {
   clearStartupNoticeAfterAiBuild,
@@ -44,6 +45,7 @@ export class BattleScene extends Phaser.Scene {
   private placement!: PlacementController;
   private selectionInput!: SelectionInput;
   private selectionRing!: Phaser.GameObjects.Arc;
+  private battlefieldGuide!: Phaser.GameObjects.Graphics;
   private campManager!: CampManager;
   private unitManager!: UnitManager;
   private effects!: EffectManager;
@@ -77,6 +79,9 @@ export class BattleScene extends Phaser.Scene {
     this.selectionRing = this.add.circle(0, 0, 40)
       .setStrokeStyle(3, SELECTION_COLOR)
       .setVisible(false);
+    this.battlefieldGuide = this.add.graphics({ x: 0, y: 0 });
+    this.battlefieldGuide.setDepth(-10);
+    this.redrawBattlefieldGuide();
     this.placementService = new CampPlacementService(this.gameState);
     this.aiController = new AiController(this.gameState, this.placementService);
     this.placement = new PlacementController(
@@ -327,6 +332,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private handleModeChanged(): void {
+    this.redrawBattlefieldGuide();
     if (this.gameState.mode === 'sandbox') {
       this.bridge.setNotice(null);
       this.maybeEmitEconomyChanged();
@@ -363,5 +369,19 @@ export class BattleScene extends Phaser.Scene {
     const camp = this.gameState.getCamp(id);
     if (!camp) { this.selectionRing.setVisible(false); return; }
     this.selectionRing.setPosition(camp.x, camp.y).setVisible(true);
+  }
+
+  /** AI 对战时绘制战场边界 + 红蓝半场；沙盒清空。 */
+  private redrawBattlefieldGuide(): void {
+    const g = this.battlefieldGuide;
+    g.clear();
+    if (this.gameState.mode !== 'aiBattle') return;
+    const b = AI_BATTLE.battlefield;
+    g.fillStyle(0xe53935, 0.07).fillRect(b.minX, b.minY, b.midX - b.minX, b.maxY - b.minY);
+    g.fillStyle(0x1e88e5, 0.07).fillRect(b.midX, b.minY, b.maxX - b.midX, b.maxY - b.minY);
+    g.lineStyle(3, 0xffffff, 0.55).strokeRect(
+      b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY,
+    );
+    g.lineStyle(2, 0xffffff, 0.4).lineBetween(b.midX, b.minY, b.midX, b.maxY);
   }
 }

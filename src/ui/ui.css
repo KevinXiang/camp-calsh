@@ -97,6 +97,18 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 .camp-btn.locked { opacity: 0.55; position: relative; }
 .camp-btn.locked::after { content: '🔒'; position: absolute; top: 1px; right: 3px; font-size: 9px; }
 
+/* AI 对战：禁用 / 资源不足 / 价格标签 / 锁定产兵倍率 */
+.camp-btn:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+.camp-btn.unaffordable {
+  opacity: 0.5;
+  box-shadow: inset 0 0 0 1px rgba(244, 67, 54, 0.55);
+}
+.camp-price {
+  min-width: 24px; color: var(--ui-gold);
+  font-size: 10px; text-align: right;
+}
+.spawn-slider.ai-fixed { opacity: 0.45; pointer-events: none; }
+
 #info-panel {
   top: 270px; right: 12px; width: 220px;
   background: var(--ui-panel-bg);
@@ -131,6 +143,15 @@ html, body, #game { width: 100%; height: 100%; overflow: hidden; }
 .hud-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 4px; }
 .hud-winner { margin-left: auto; font-size: 18px; font-weight: bold; font-family: var(--ui-font-display); }
 .hud-speed { font-size: 18px; color: var(--ui-gold); min-width: 32px; text-align: center; font-weight: bold; }
+.hud-mode {
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  font-size: 12px; font-weight: bold;
+}
+.hud-economy { font-size: 14px; }
+.hud-red-resource { color: #ff8a80; font-weight: bold; }
+.hud-blue-resource { color: #82b1ff; font-weight: bold; }
+.hud-notice { color: #ffcc80; font-size: 12px; }
 
 #control-bar {
   bottom: 0; left: 0; right: 0; height: 38px;

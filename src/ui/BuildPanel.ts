@@ -3,6 +3,7 @@ import type { GameState } from '../game/GameState';
 import type { UiBridge } from './UiBridge';
 import { MathQuizModal } from './MathQuizModal';
 import { CAMP_ROLE_DEFS, TIER_LABEL } from '../config/campRoles';
+import { AI_BATTLE } from '../config/aiBattle';
 
 const KINDS: { key: CampKind; label: string; icon: string; gated?: boolean }[] = [
   { key: 'sword', label: '剑兵', icon: '⚔️' },
@@ -32,6 +33,7 @@ interface SpawnSliderRefs {
 export class BuildPanel {
   private leftButtons = new Map<CampKind, HTMLButtonElement>();
   private rightButtons = new Map<CampKind, HTMLButtonElement>();
+  private blueTitle!: HTMLDivElement;
   private spawnSliders: Record<Faction, SpawnSliderRefs | null> = { red: null, blue: null };
   private modal = new MathQuizModal();
   private hoverTimer: number | null = null;
@@ -42,6 +44,8 @@ export class BuildPanel {
     this.bindHotkeys();
     bridge.on('placementChanged', () => this.render());
     bridge.on('simChanged', () => { this.syncSliders(); this.render(); });
+    bridge.on('modeChanged', () => this.render());
+    bridge.on('economyChanged', () => this.render());
     this.render();
   }
 
@@ -61,6 +65,7 @@ export class BuildPanel {
     title.className = 'build-panel-title';
     title.textContent = faction === 'red' ? '🔴 红方' : '🔵 蓝方';
     root.append(title);
+    if (faction === 'blue') this.blueTitle = title;
 
     for (const k of KINDS) {
       const role = CAMP_ROLE_DEFS[k.key];
@@ -69,10 +74,16 @@ export class BuildPanel {
       b.innerHTML =
         `<span class="icon">${k.icon}</span>` +
         `<span class="camp-name">${k.label}</span>` +
+        `<span class="camp-price"></span>` +
         `<span class="camp-tier-dot tier-${role.tier}" title="${TIER_LABEL[role.tier]}"></span>`;
       b.draggable = true;
 
       b.addEventListener('dragstart', async (e) => {
+        if (this.isAffordableBlocked(faction, k.key)) {
+          e.preventDefault();
+          this.bridge.reportPlacementFailure('insufficientResources');
+          return;
+        }
         if (k.gated && !this.bridge.isUnlocked(this.gs())) {
           e.preventDefault();
           await this.modal.open();
@@ -89,6 +100,10 @@ export class BuildPanel {
       });
 
       b.onclick = async () => {
+        if (this.isAffordableBlocked(faction, k.key)) {
+          this.bridge.reportPlacementFailure('insufficientResources');
+          return;
+        }
         if (k.gated && !this.bridge.isUnlocked(this.gs())) {
           await this.modal.open();
           this.bridge.unlockGate(this.gs());
@@ -182,18 +197,44 @@ export class BuildPanel {
     });
   }
 
+  /** AI 对战模式下，红方资源不足时拦截建造 */
+  private isAffordableBlocked(faction: Faction, kind: CampKind): boolean {
+    const gs = this.gs();
+    return faction === 'red'
+      && gs.mode === 'aiBattle'
+      && gs.economy.resources.red < AI_BATTLE.prices[kind];
+  }
+
   private render(): void {
+    const gs = this.gs();
     const sel = this.bridge.getSelection();
-    const unlocked = this.bridge.isUnlocked(this.gs());
+    const unlocked = this.bridge.isUnlocked(gs);
+    const aiMode = gs.mode === 'aiBattle';
+
+    this.blueTitle.textContent = aiMode ? '🔵 蓝方 · AI 控制' : '🔵 蓝方';
+
     for (const [kind, btn] of this.leftButtons) {
       const kdef = KINDS.find(k => k.key === kind);
       btn.classList.toggle('active', sel.faction === 'red' && sel.kind === kind);
       btn.classList.toggle('locked', !!kdef?.gated && !unlocked);
+      btn.classList.toggle(
+        'unaffordable',
+        aiMode && gs.economy.resources.red < AI_BATTLE.prices[kind],
+      );
+      const price = btn.querySelector('.camp-price')!;
+      price.textContent = aiMode ? String(AI_BATTLE.prices[kind]) : '';
     }
     for (const [kind, btn] of this.rightButtons) {
       const kdef = KINDS.find(k => k.key === kind);
       btn.classList.toggle('active', sel.faction === 'blue' && sel.kind === kind);
       btn.classList.toggle('locked', !!kdef?.gated && !unlocked);
+      btn.disabled = aiMode;
+      const price = btn.querySelector('.camp-price')!;
+      price.textContent = aiMode ? String(AI_BATTLE.prices[kind]) : '';
+    }
+
+    for (const f of ['red', 'blue'] as const) {
+      this.spawnSliders[f]?.input.parentElement?.classList.toggle('ai-fixed', aiMode);
     }
   }
 }

@@ -16,6 +16,7 @@ export class ControlBar {
       <button data-action="speed-4">4x</button>
       <button data-action="speed-5">5x</button>
       <span class="control-sep"></span>
+      <button data-action="mode-toggle" title="切换沙盒 / AI 对战">沙盒</button>
       <button data-action="reset" title="重置战场">重置</button>
     `;
     document.body.append(this.root);
@@ -34,11 +35,15 @@ export class ControlBar {
         case 'speed-3': this.bridge.setSpeed(3, gs); break;
         case 'speed-4': this.bridge.setSpeed(4, gs); break;
         case 'speed-5': this.bridge.setSpeed(5, gs); break;
+        case 'mode-toggle':
+          this.bridge.setMode(gs.mode === 'sandbox' ? 'aiBattle' : 'sandbox', gs);
+          break;
         case 'reset': location.reload(); break;
       }
     });
 
     bridge.on('simChanged', () => this.render());
+    bridge.on('modeChanged', () => this.render());
     this.render();
   }
 
@@ -51,5 +56,9 @@ export class ControlBar {
       const btn = this.root.querySelector(`[data-action="speed-${s}"]`)!;
       btn.classList.toggle('active', gs.sim.speed === s);
     }
+
+    const modeBtn = this.root.querySelector('[data-action="mode-toggle"]')!;
+    modeBtn.textContent = gs.mode === 'aiBattle' ? 'AI 对战' : '沙盒';
+    modeBtn.classList.toggle('active', gs.mode === 'aiBattle');
   }
 }

@@ -11,6 +11,9 @@ export class HudController {
     document.body.append(this.el);
 
     bridge.on('statsChanged', () => this.render());
+    bridge.on('modeChanged', () => this.render());
+    bridge.on('economyChanged', () => this.render());
+    bridge.on('noticeChanged', () => this.render());
     this.render();
   }
 
@@ -46,6 +49,19 @@ export class HudController {
     }
     const speedLabel = s.sim.running ? `${s.sim.speed}x` : '⏸';
 
+    const economy = s.mode === 'aiBattle'
+      ? `<span class="hud-section hud-economy">
+           <span class="hud-sublabel">资源</span>
+           <span class="hud-red-resource">${Math.floor(s.economy.resources.red)}</span>
+           <span class="hud-sublabel">:</span>
+           <span class="hud-blue-resource">${Math.floor(s.economy.resources.blue)}</span>
+         </span>`
+      : '';
+    const mode = `<span class="hud-mode">${s.mode === 'aiBattle' ? 'AI 对战' : '沙盒'}</span>`;
+    const notice = this.bridge.getNotice()
+      ? `<span class="hud-notice">${this.bridge.getNotice()}</span>`
+      : '';
+
     this.el.innerHTML = `
       <span class="hud-section ${redClass}">
         <span class="hud-icon">🔴</span>
@@ -68,7 +84,10 @@ export class HudController {
         <span class="hud-num">${total}</span>
         <span class="hud-sublabel">在场</span>
       </span>
+      ${economy}
       <span class="hud-winner">${status}</span>
+      ${notice}
+      ${mode}
       <span class="hud-speed">${speedLabel}</span>
       ${s.sim.unlockTimer > 0
         ? `<span class="hud-section"><span class="hud-icon">🔓</span><span class="hud-num">${Math.ceil(s.sim.unlockTimer)}</span><span class="hud-sublabel">s</span></span>`
