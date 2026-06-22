@@ -3,7 +3,8 @@ import type { CombatGSView } from '../src/game/managers/CombatSystem';
 
 export function mkCamp(o: Partial<Camp> = {}): Camp {
   return { id: 'c1', faction: 'red', kind: 'sword', x: 0, y: 0, hp: 500, maxHp: 500,
-    spawnTimer: 0, upgrades: { production: 1, health: 1, weapon: 1 }, aliveUnits: 1, destroyed: false, ...o };
+    spawnTimer: 0, upgrades: { production: 1, health: 1, weapon: 1 }, aliveUnits: 1, destroyed: false,
+    paidCost: 0, ...o };
 }
 
 export function mkUnit(o: Partial<Unit> = {}): Unit {
